@@ -698,7 +698,6 @@
       "productivity_bonus": 0,
       "translated_name": "Express underground belt"
     },
-
     "fast-splitter": {
       "name": "fast-splitter",
       "category": "crafting",
@@ -11730,7 +11729,7 @@
       "type": "item",
       "order": "e[iron-ore]",
       "group": "intermediate-products",
-      "subgroup": "raw-resource",1
+      "subgroup": "raw-resource",
       "stack_size": 50,
       "weight": 2000,
       "fuel_value": 0,
@@ -13588,7 +13587,7 @@
       "translated_name": "Unknown fluid"
     }
   },
-  "entities": {
+  "entities":{
     "boiler": {
       "name": "boiler",
       "type": "boiler",
