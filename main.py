@@ -44,11 +44,12 @@ def ingest():
                 ingredient.pop('probability')
 
         for product in recipe['products']:
-            recipe[product].pop('probability')
+            product.pop('probability')
 
         recipe.pop('allowed_effects')
         recipe.pop('productivity_bonus')
-        recipe.pop('main_product')
+        if "main_product" in recipe:
+            recipe.pop('main_product')
         recipe.pop('maximum_productivity')
         recipes.append(
             Recipe(name=recipe['name'], order=recipe['order'], group=recipe['group'], subgroup=recipe['subgroup'],
@@ -63,24 +64,31 @@ def ingest():
         entity.pop('flags')
         if 'effect_receiver' in entity:
             entity.pop('effect_receiver')
-        if 'drain' in entitiesJson[entity]:
+        if 'drain' in entity:
             entity.pop('drain')
-        if 'allowed_effects' in entitiesJson[entity]:
+        if 'allowed_effects' in entity:
             entity.pop('allowed_effects')
-        entity.append(
-            Entity(name=entity['name'], order=entity['order'], group=entity['group'], subgroup=entity['subgroup'],
-                   translated_name=entity['translated_name'], crafting_categories=entity['crafting_categories'],
-                   manufacturing_type=entity['type'], crafting_speed=entity['crafting_speed']))
+        if "crafting_categories" in entity:
+            entities.append(
+                Entity(name=entity['name'], order=entity['order'], group=entity['group'], subgroup=entity['subgroup'],
+                       translated_name=entity['translated_name'], crafting_categories=entity['crafting_categories'],
+                       manufacturing_type=entity['type'], crafting_speed=entity['crafting_speed']))
+        else:
+            entities.append(
+                Entity(name=entity['name'], order=entity['order'], group=entity['group'], subgroup=entity['subgroup'],
+                       translated_name=entity['translated_name'], crafting_categories=[],
+                       manufacturing_type=entity['type'], crafting_speed=0))
 
     for fluid in fluidsJson:
         fluid = fluidsJson[fluid]
-        if fluid['name'].contains('parameter') or fluid['name'].contains('fluid-unknown'):
-            fluidsJson.pop(fluid['name'])
+        if 'parameter' in fluid['name'] or 'fluid-unknown' in fluid['name']:
+            continue
         fluid.pop('group')
         fluid.pop('subgroup')
         fluid.pop('fuel_value')
-        fluids.append(Item(name=fluid['name'], order=fluid['order'], group=fluid['group'], subgroup=fluid['subgroup'],
+        fluids.append(Item(name=fluid['name'], order=fluid['order'], group='fluids', subgroup='fluid',
                            translated_name=fluid['translated_name']))
+
 
 ingest()
 print(fluids, entities, recipes)
