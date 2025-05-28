@@ -3,6 +3,8 @@ from json import load
 recipes = []
 entities = []
 fluids = []
+groups = {"logistics": [], "production": [], "intermediate-products": [], "combat": [], 'other': []}
+global recipeChoice
 
 
 class Item:
@@ -12,6 +14,9 @@ class Item:
         self.group = group
         self.subgroup = subgroup
         self.translated_name = translated_name
+
+    def __str__(self):
+        return self.translated_name
 
 
 class Recipe(Item):
@@ -30,13 +35,7 @@ class Entity(Item):
         self.crafting_categories = crafting_categories
 
 
-def ingest():
-    with open("recipes-og.json") as file:
-        json = load(file)
-        recipesJson = json['recipes']
-        entitiesJson = json['entities']
-        fluidsJson = json['fluids']
-
+def ingestRecipes(recipesJson):
     for recipe in recipesJson:
         recipe = recipesJson[recipe]
         for ingredient in recipe['ingredients']:
@@ -56,8 +55,14 @@ def ingest():
                    translated_name=recipe['translated_name'], products=recipe['products'],
                    ingredients=recipe['ingredients'], energy=recipe['energy']))
 
+
+def ingestEntities(entitiesJson):
     for entity in entitiesJson:
         entity = entitiesJson[entity]
+
+        if 'parameter' in entity['name'] or 'recipe-unknown' in entity['name']:
+            continue
+
         entity.pop('module_inventory_size')
         entity.pop('width')
         entity.pop('height')
@@ -79,6 +84,8 @@ def ingest():
                        translated_name=entity['translated_name'], crafting_categories=[],
                        manufacturing_type=entity['type'], crafting_speed=0))
 
+
+def ingestFluids(fluidsJson):
     for fluid in fluidsJson:
         fluid = fluidsJson[fluid]
         if 'parameter' in fluid['name'] or 'fluid-unknown' in fluid['name']:
@@ -90,5 +97,86 @@ def ingest():
                            translated_name=fluid['translated_name']))
 
 
+def populateGroups():
+    for recipe in recipes:
+        groups[recipe.group].append(recipe)
+
+
+def ingest():
+    with open("recipes-og.json") as file:
+        json = load(file)
+        recipesJson = json['recipes']
+        entitiesJson = json['entities']
+        fluidsJson = json['fluids']
+
+    ingestRecipes(recipesJson)
+
+    ingestEntities(entitiesJson)
+
+    ingestFluids(fluidsJson)
+
+    populateGroups()
+
+
+def printRecipes(group: list):
+    for item in group:
+        print(item)
+
+
+def chooseRecipe():
+    while True:
+        choice = str(input("What is the name of the recipe you'd like?"))
+        choice = choice.lower().strip()
+
+        try:
+            for recipe in recipes:
+                if recipe.name == choice:
+                    choice = recipe
+        except KeyError:
+            print("Invalid recipe name. Please try again.")
+            continue
+        else:
+            break
+
+    recipeChoice = choice
+
+
+def haha_it_chooses():
+    while True:  # Catch conversion errors e.g. not a valid entry
+        choice = int(input("1. Choose a recipe \n"
+                           "2. Return to category menu \n"
+                           "Input a number: "))
+        match choice:
+            case 1:
+                chooseRecipe()
+                break
+            case 2:
+                displayCategories()
+                break
+            case _:
+                print("Invalid choice. Try again with a valid choice (1 or 2)")
+                continue
+
+
+def displayCategories():
+    for i, group in enumerate(groups):
+        print(f"{i + 1}) {group.upper()}")
+
+    while True:
+        try:
+            choice = int(input("Which category would you like to look at? (Enter a number): "))
+        except ValueError:
+            print("Invalid input. Please try again, with an integer.")
+            continue
+        else:
+            if (len(groups) + 1) >= choice >= 1:
+                printRecipes(groups[list(groups)[choice - 1]])
+                break
+            else:
+                print("Invalid selection. Please try again.")
+                continue
+    haha_it_chooses()
+
+
 ingest()
-print(fluids, entities, recipes)
+displayCategories()
