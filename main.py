@@ -4,7 +4,7 @@ recipes = []
 entities = []
 fluids = []
 groups = {"logistics": [], "production": [], "intermediate-products": [], "combat": [], 'other': []}
-global recipeChoice
+choices = []
 
 
 class Item:
@@ -25,6 +25,19 @@ class Recipe(Item):
         self.ingredients = ingredients
         self.products = products
         self.energy = energy
+
+    def __eq__(self, other):
+        return self.name == other
+
+    def printIngredients(self):
+        print("---Ingredients---")
+        for ingredient in self.ingredients:
+            print(f"{ingredient['amount']}x {ingredient['name'].title().replace("-", " ")}")
+
+    def printProducts(self):
+        print("---Products---")
+        for product in self.products:
+            print(f"{product['amount']}x {product['name'].title().replace("-", " ")}")
 
 
 class Entity(Item):
@@ -125,27 +138,55 @@ def printRecipes(group: list):
 
 def chooseRecipe():
     while True:
-        choice = str(input("What is the name of the recipe you'd like?"))
-        choice = choice.lower().strip()
+        try:
+            choice = str(input("What is the name of the recipe you'd like? "))
+            choice = choice.lower().strip()
+        except ValueError:
+            print("Invalid entry, please try again. Make sure you are entering text.")
+            continue
 
         try:
-            for recipe in recipes:
-                if recipe.name == choice:
-                    choice = recipe
-        except KeyError:
+            index = recipes.index(choice)
+        except ValueError:
             print("Invalid recipe name. Please try again.")
             continue
         else:
             break
 
-    recipeChoice = choice
+    recipes[index].printProducts()
+    recipes[index].printIngredients()
+
+    while True:
+        try:
+            choice = int(input("1) Choose this recipe \n"
+                               "2) Choose another recipe \n"
+                               "Input a number: "))
+        except ValueError:
+            print("Invalid entry, please try again. Make sure you are entering a number.")
+            continue
+
+        match choice:
+            case 1:
+                choices.append(recipes[index])
+                break
+            case 2:
+                chooseRecipe()
+                break
+            case _:
+                print("Invalid choice. Try again with a valid choice (1 or 2)")
+                continue
 
 
 def haha_it_chooses():
     while True:  # Catch conversion errors e.g. not a valid entry
-        choice = int(input("1. Choose a recipe \n"
-                           "2. Return to category menu \n"
-                           "Input a number: "))
+        try:
+            choice = int(input("1) Choose a recipe \n"
+                               "2) Return to category menu \n"
+                               "Input a number: "))
+        except ValueError:
+            print("Invalid entry, please try again. Make sure you are entering a number.")
+            continue
+
         match choice:
             case 1:
                 chooseRecipe()
@@ -160,7 +201,7 @@ def haha_it_chooses():
 
 def displayCategories():
     for i, group in enumerate(groups):
-        print(f"{i + 1}) {group.upper()}")
+        print(f"{i + 1}) {group.title()}")
 
     while True:
         try:
@@ -180,3 +221,4 @@ def displayCategories():
 
 ingest()
 displayCategories()
+print([str(i) for i in choices])
