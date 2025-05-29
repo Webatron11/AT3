@@ -5,6 +5,7 @@ entities = []
 fluids = []
 groups = {"logistics": [], "production": [], "intermediate-products": [], "combat": [], 'other': []}
 choices = []
+buffs = {}
 
 
 class Item:
@@ -140,7 +141,7 @@ def chooseRecipe():
     while True:
         try:
             choice = str(input("What is the name of the recipe you'd like? "))
-            choice = choice.lower().strip()
+            choice = choice.lower().strip().replace(" ", "-")
         except ValueError:
             print("Invalid entry, please try again. Make sure you are entering text.")
             continue
@@ -160,7 +161,7 @@ def chooseRecipe():
         try:
             choice = int(input("1) Choose this recipe \n"
                                "2) Choose another recipe \n"
-                               "Input a number: "))
+                               "Input your choice:  "))
         except ValueError:
             print("Invalid entry, please try again. Make sure you are entering a number.")
             continue
@@ -171,28 +172,6 @@ def chooseRecipe():
                 break
             case 2:
                 chooseRecipe()
-                break
-            case _:
-                print("Invalid choice. Try again with a valid choice (1 or 2)")
-                continue
-
-
-def haha_it_chooses():
-    while True:  # Catch conversion errors e.g. not a valid entry
-        try:
-            choice = int(input("1) Choose a recipe \n"
-                               "2) Return to category menu \n"
-                               "Input a number: "))
-        except ValueError:
-            print("Invalid entry, please try again. Make sure you are entering a number.")
-            continue
-
-        match choice:
-            case 1:
-                chooseRecipe()
-                break
-            case 2:
-                displayCategories()
                 break
             case _:
                 print("Invalid choice. Try again with a valid choice (1 or 2)")
@@ -216,9 +195,70 @@ def displayCategories():
             else:
                 print("Invalid selection. Please try again.")
                 continue
-    haha_it_chooses()
+
+    while True:
+        try:
+            choice = int(input("1) Choose a recipe \n"
+                               "2) Return to category menu \n"
+                               "Input your choice:  "))
+        except ValueError:
+            print("Invalid entry, please try again. Make sure you are entering a number.")
+            continue
+
+        match choice:
+            case 1:
+                chooseRecipe()
+                break
+            case 2:
+                displayCategories()
+                break
+            case _:
+                print("Invalid choice. Try again with a valid choice (1 or 2)")
+                continue
 
 
-ingest()
-displayCategories()
-print([str(i) for i in choices])
+def chooseBuilding(buildings: list, category: str):
+    while True:
+        try:
+            choice = int(input("".join([f"{i + 1}) {x} \n" for i, x in enumerate(buildings)]) + "Input your choice: "))
+        except ValueError:
+            print("Invalid entry, please try again. Make sure you are entering a number.")
+            continue
+
+        if (len(buildings) + 1) >= choice >= 1:
+            buffs.update({category: buildings[choice - 1].lower().strip().replace(" ", "-")})
+            break
+
+
+def chooseBuffs():
+    # TODO Make these draw from entities[]
+    assembler = ["Assembly Machine 1", "Assembly Machine 2", "Assembly Machine 3"]
+    miner = ["Burner Mining Drill", "Electric Mining Drill"]
+    furnace = ["Stone Furnace", "Steel Furnace", "Electric Furnace"]
+
+    while True:
+        try:
+            choice = int(input("1) Assembly Machine \n"
+                               "2) Miner \n" # TODO Add mining prod
+                               "3) Furnace \n" # TODO Select fuel source
+                               "Input your choice:  "))
+        except ValueError:
+            print("Invalid entry, please try again. Make sure you are entering a number.")
+            continue
+
+        match choice:
+            case 1:
+                chooseBuilding(assembler, "assembly")
+            case 2:
+                chooseBuilding(miner, "miner")
+            case 3:
+                chooseBuilding(furnace, "furnace")
+            case _:
+                print("Invalid choice. Try again with a valid choice (1-4)")
+
+
+# ingest()
+# displayCategories()
+# print([str(i) for i in choices])
+
+chooseBuilding(["Assembly Machine 1", "Assembly Machine 2", "Assembly Machine 3"], "")
