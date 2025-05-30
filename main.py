@@ -230,17 +230,34 @@ def chooseBuilding(buildings: list, category: str):
             break
 
 
+def chooseResearch():
+    while True:
+        try:
+            choice = int(input("How many levels of mining productivity research have you done? "))
+        except ValueError:
+            print("Invalid entry, please try again. Make sure you are entering a number.")
+            continue
+
+        if choice >= 0:
+            buffs.update({"mining-prod": choice * 0.1})
+            break
+        else:
+            print("Invalid entry, please try again. Must be a positive integer.")
+            continue
+
+
 def chooseBuffs():
     # TODO Make these draw from entities[]
     assembler = ["Assembly Machine 1", "Assembly Machine 2", "Assembly Machine 3"]
     miner = ["Burner Mining Drill", "Electric Mining Drill"]
     furnace = ["Stone Furnace", "Steel Furnace", "Electric Furnace"]
+    fuels = ["Wood", "Coal", "Solid Fuel", "Rocket Fuel", "Nuclear Fuel"]
 
     while True:
         try:
             choice = int(input("1) Assembly Machine \n"
-                               "2) Miner \n" # TODO Add mining prod
-                               "3) Furnace \n" # TODO Select fuel source
+                               "2) Miner \n"  # TODO Add mining prod
+                               "3) Furnace \n"  # TODO Select fuel source
                                "Input your choice:  "))
         except ValueError:
             print("Invalid entry, please try again. Make sure you are entering a number.")
@@ -251,14 +268,19 @@ def chooseBuffs():
                 chooseBuilding(assembler, "assembly")
             case 2:
                 chooseBuilding(miner, "miner")
+                chooseResearch()
             case 3:
                 chooseBuilding(furnace, "furnace")
+                chooseBuilding(fuels, "fuel")
             case _:
                 print("Invalid choice. Try again with a valid choice (1-4)")
+
+        if "assembly" in buffs and "miner" in buffs and "furnace" in buffs:
+            break
 
 
 # ingest()
 # displayCategories()
 # print([str(i) for i in choices])
 
-chooseBuilding(["Assembly Machine 1", "Assembly Machine 2", "Assembly Machine 3"], "")
+chooseBuffs()
