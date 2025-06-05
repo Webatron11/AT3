@@ -7,7 +7,10 @@ class Item:
         self.translated_name = translated_name
 
     def __str__(self):
-        return self.translated_name
+        return self.name
+
+    def __eq__(self, other):
+        return self.name == other
 
 
 class Recipe(Item):
@@ -16,9 +19,6 @@ class Recipe(Item):
         self.ingredients = ingredients
         self.products = products
         self.energy = energy
-
-    def __eq__(self, other):
-        return self.name == other
 
     def printIngredients(self):
         print("---Ingredients---")

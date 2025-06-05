@@ -4,6 +4,7 @@ from classes import *
 recipes = []
 entities = []
 fluids = []
+items = []
 groups = {"logistics": [], "production": [], "intermediate-products": [], "combat": [], 'other': []}
 choices = []
 buffs = {}
@@ -28,6 +29,14 @@ def ingestRecipes(recipesJson):
             Recipe(name=recipe['name'], order=recipe['order'], group=recipe['group'], subgroup=recipe['subgroup'],
                    translated_name=recipe['translated_name'], products=recipe['products'],
                    ingredients=recipe['ingredients'], energy=recipe['energy']))
+
+def ingestItems(itemsJson):
+    for item in itemsJson:
+        item = itemsJson[item]
+        if "item" not in item['type']:
+            continue
+
+        items.append(Item(name=item['name'], order=item['order'], group=item['group'], subgroup=item['subgroup'], translated_name=item['translated_name']))
 
 
 def ingestEntities(entitiesJson):
@@ -82,12 +91,15 @@ def ingest():
         recipesJson = json['recipes']
         entitiesJson = json['entities']
         fluidsJson = json['fluids']
+        itemsJson = json['items']
 
     ingestRecipes(recipesJson)
 
     ingestEntities(entitiesJson)
 
     ingestFluids(fluidsJson)
+
+    ingestItems(itemsJson)
 
     populateGroups()
 
@@ -216,8 +228,8 @@ def chooseBuffs():
     while True:
         try:
             choice = int(input("1) Assembly Machine \n"
-                               "2) Miner \n"  # TODO Add mining prod
-                               "3) Furnace \n"  # TODO Select fuel source
+                               "2) Miner \n"
+                               "3) Furnace \n" 
                                "Input your choice:  "))
         except ValueError:
             print("Invalid entry, please try again. Make sure you are entering a number.")
