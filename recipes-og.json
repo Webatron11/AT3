@@ -5408,7 +5408,7 @@
         },
         {
           "type": "item",
-          "name": "sulfur",
+          "name": "C",
           "amount": 5
         },
         {
@@ -5910,7 +5910,8 @@
       "productivity_bonus": 0,
       "translated_name": "Fill Petroleum gas barrel"
     },
-    "light-oil-barrel": {
+    "light-oil-barrel":
+    {
       "name": "light-oil-barrel",
       "category": "crafting-with-fluid",
       "ingredients": [

@@ -1,3 +1,16 @@
+from enum import Enum
+
+class Category(Enum):
+    SMELTING = "smelting"
+    CHEMISTRY = "chemistry"
+    CRAFTING_WITH_FLUID = "crafting-with-fluid"
+    CRAFTING = "crafting"
+    ADVANCED_CRAFTING = "advanced-crafting"
+    BASIC_CRAFTING = "basic-crafting"
+    CENTRIFUGING = "centrifuging"
+    OIL_PROCESSING = "oil-processing"
+    ROCKET_BUILDING = "rocket-building"
+
 class Item:
     def __init__(self, name: str, order: str, group: str, subgroup: str, translated_name: str):
         self.name = name
@@ -14,11 +27,12 @@ class Item:
 
 
 class Recipe(Item):
-    def __init__(self, ingredients: list, products: list, energy: float, *args, **kwargs):
+    def __init__(self, ingredients: list, products: list, energy: float, category: Category, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ingredients = ingredients
         self.products = products
         self.energy = energy
+        self.category = category
 
     def printIngredients(self):
         print("---Ingredients---")
@@ -37,3 +51,13 @@ class Entity(Item):
         self.crafting_speed = crafting_speed
         self.manufacturing_type = manufacturing_type
         self.crafting_categories = crafting_categories
+
+class Ingredient:
+    def __init__(self, recipe, amount: float, parent: Recipe, machines_needed = 0.0):
+        self.recipe = recipe
+        self.amount = amount
+        self.parent = parent
+        self.machines_needed = machines_needed
+
+    def calculate(self):
+        pass # Do stuff depending on the recipe's category

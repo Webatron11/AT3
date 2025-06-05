@@ -1,4 +1,5 @@
 from json import load
+
 from classes import *
 
 recipes = []
@@ -8,6 +9,7 @@ items = []
 groups = {"logistics": [], "production": [], "intermediate-products": [], "combat": [], 'other': []}
 choices = []
 buffs = {}
+total_ingredients = []
 
 
 def ingestRecipes(recipesJson):
@@ -28,7 +30,8 @@ def ingestRecipes(recipesJson):
         recipes.append(
             Recipe(name=recipe['name'], order=recipe['order'], group=recipe['group'], subgroup=recipe['subgroup'],
                    translated_name=recipe['translated_name'], products=recipe['products'],
-                   ingredients=recipe['ingredients'], energy=recipe['energy']))
+                   ingredients=recipe['ingredients'], energy=recipe['energy'], category=recipe['category']))
+
 
 def ingestItems(itemsJson):
     for item in itemsJson:
@@ -36,7 +39,8 @@ def ingestItems(itemsJson):
         if "item" not in item['type']:
             continue
 
-        items.append(Item(name=item['name'], order=item['order'], group=item['group'], subgroup=item['subgroup'], translated_name=item['translated_name']))
+        items.append(Item(name=item['name'], order=item['order'], group=item['group'], subgroup=item['subgroup'],
+                          translated_name=item['translated_name']))
 
 
 def ingestEntities(entitiesJson):
@@ -229,7 +233,7 @@ def chooseBuffs():
         try:
             choice = int(input("1) Assembly Machine \n"
                                "2) Miner \n"
-                               "3) Furnace \n" 
+                               "3) Furnace \n"
                                "Input your choice:  "))
         except ValueError:
             print("Invalid entry, please try again. Make sure you are entering a number.")
@@ -249,3 +253,19 @@ def chooseBuffs():
 
         if "assembly" in buffs and "miner" in buffs and "furnace" in buffs:
             break
+
+
+def calculate(recipe: Recipe):
+    for ingredient in recipe.ingredients:
+        if ingredient['type'] == 'fluid':
+            total_ingredients.append(
+                Ingredient(recipe=fluids[fluids.index(ingredient['name'])], amount=ingredient['amount'], parent=recipe))
+            continue
+        if items[items.index(ingredient['name'])].subgroup != "raw-resource":
+            total_ingredients.append(
+                Ingredient(recipe=recipes[recipes.index(ingredient['name'])], amount=ingredient['amount'],
+                           parent=recipe))
+            calculate(recipes[recipes.index(ingredient['name'])])
+        else:
+            total_ingredients.append(
+                Ingredient(recipe=items[items.index(ingredient['name'])], amount=ingredient['amount'], parent=recipe))
