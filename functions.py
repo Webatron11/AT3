@@ -8,7 +8,7 @@ fluids = []
 items = []
 groups = {"logistics": [], "production": [], "intermediate-products": [], "combat": [], 'other': []}
 choices = []
-buffs = {}
+buffs = []
 total_ingredients = []
 
 
@@ -193,7 +193,7 @@ def displayCategories():
                 continue
 
 
-def chooseBuilding(buildings: list, category: str):
+def chooseBuilding(buildings: list):
     while True:
         try:
             choice = int(input("".join([f"{i + 1}) {x} \n" for i, x in enumerate(buildings)]) + "Input your choice: "))
@@ -202,7 +202,7 @@ def chooseBuilding(buildings: list, category: str):
             continue
 
         if (len(buildings) + 1) >= choice >= 1:
-            buffs.update({category: buildings[choice - 1].lower().strip().replace(" ", "-")})
+            buffs.append(buildings[choice - 1].lower().strip().replace(" ", "-"))
             break
 
 
@@ -215,7 +215,7 @@ def chooseResearch():
             continue
 
         if choice >= 0:
-            buffs.update({"mining-prod": choice * 0.1})
+            buffs.append(choice * 0.1)
             break
         else:
             print("Invalid entry, please try again. Must be a positive integer.")
@@ -241,17 +241,17 @@ def chooseBuffs():
 
         match choice:
             case 1:
-                chooseBuilding(assembler, "assembly")
+                chooseBuilding(assembler)
             case 2:
-                chooseBuilding(miner, "miner")
+                chooseBuilding(miner)
                 chooseResearch()
             case 3:
-                chooseBuilding(furnace, "furnace")
-                chooseBuilding(fuels, "fuel")
+                chooseBuilding(furnace)
+                chooseBuilding(fuels)
             case _:
                 print("Invalid choice. Try again with a valid choice (1-4)")
 
-        if "assembly" in buffs and "miner" in buffs and "furnace" in buffs:
+        if "assembly" in buffs and "mining" in buffs and "furnace" in buffs:
             break
 
 

@@ -1,4 +1,6 @@
 from enum import Enum
+from functions import entities, buffs
+
 
 class Category(Enum):
     SMELTING = "smelting"
@@ -10,6 +12,7 @@ class Category(Enum):
     CENTRIFUGING = "centrifuging"
     OIL_PROCESSING = "oil-processing"
     ROCKET_BUILDING = "rocket-building"
+
 
 class Item:
     def __init__(self, name: str, order: str, group: str, subgroup: str, translated_name: str):
@@ -52,12 +55,20 @@ class Entity(Item):
         self.manufacturing_type = manufacturing_type
         self.crafting_categories = crafting_categories
 
+
 class Ingredient:
-    def __init__(self, recipe, amount: float, parent: Recipe, machines_needed = 0.0):
+    def __init__(self, recipe, amount: float, parent: Recipe, machines_needed=0.0):
         self.recipe = recipe
         self.amount = amount
         self.parent = parent
+        self.machine = ''
         self.machines_needed = machines_needed
 
+    def chooseMachine(self):
+        possibilities = [i for i in entities if self.recipe.category in i.crafting_categories]
+        for buff in buffs:
+            if buff in possibilities:
+                self.machine = possibilities[possibilities.index(buff)]
+
     def calculate(self):
-        pass # Do stuff depending on the recipe's category
+        pass
