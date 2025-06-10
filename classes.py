@@ -1,5 +1,5 @@
 from enum import Enum
-from functions import entities, buffs
+# from functions import entities, buffs
 
 
 class Category(Enum):
@@ -64,11 +64,18 @@ class Ingredient:
         self.machine = ''
         self.machines_needed = machines_needed
 
-    def chooseMachine(self):
-        possibilities = [i for i in entities if self.recipe.category in i.crafting_categories]
-        for buff in buffs:
-            if buff in possibilities:
-                self.machine = possibilities[possibilities.index(buff)]
+    def chooseMachine(self, entities, buffs):
+        if type(self.recipe) == Recipe:
+            possibilities = [i for i in entities if self.recipe.category in i.crafting_categories]
+        else:
+            possibilities = [i for i in entities if "smelting" in i.crafting_categories] # TODO NOT SMELTING, MINING
 
-    def calculate(self):
-        pass
+        self.machine = possibilities[possibilities.index([buff for buff in buffs if buff in possibilities][0])]
+        self.machine = entities[entities.index(self.machine)]
+
+    def calculate(self, entities, buffs):
+        self.chooseMachine(entities, buffs)
+        self.machines_needed = self.amount / self.machine.crafting_speed['normal']
+
+    def __str__(self):
+        return f"{self.recipe.translated_name} x {self.amount} ({self.machine} x {self.machines_needed})"

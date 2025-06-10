@@ -224,14 +224,14 @@ def chooseResearch():
 
 def chooseBuffs():
     # TODO Make these draw from entities[]
-    assembler = ["Assembly Machine 1", "Assembly Machine 2", "Assembly Machine 3"]
+    assembler = ["Assembling Machine 1", "Assembling Machine 2", "Assembling Machine 3"]
     miner = ["Burner Mining Drill", "Electric Mining Drill"]
     furnace = ["Stone Furnace", "Steel Furnace", "Electric Furnace"]
     fuels = ["Wood", "Coal", "Solid Fuel", "Rocket Fuel", "Nuclear Fuel"]
 
     while True:
         try:
-            choice = int(input("1) Assembly Machine \n"
+            choice = int(input("1) Assembling Machine \n"
                                "2) Miner \n"
                                "3) Furnace \n"
                                "Input your choice:  "))
