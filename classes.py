@@ -12,6 +12,7 @@ class Category(Enum):
     CENTRIFUGING = "centrifuging"
     OIL_PROCESSING = "oil-processing"
     ROCKET_BUILDING = "rocket-building"
+    MINING = "mining"
 
 
 class Item:
