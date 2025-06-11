@@ -1,4 +1,6 @@
 from enum import Enum
+
+
 # from functions import entities, buffs
 
 
@@ -12,7 +14,8 @@ class Category(Enum):
     CENTRIFUGING = "centrifuging"
     OIL_PROCESSING = "oil-processing"
     ROCKET_BUILDING = "rocket-building"
-    MINING = "mining"
+    BASIC_SOLID = "basic-solid"
+    BASIC_FLUID = "basic-fluid"
 
 
 class Item:
@@ -49,12 +52,12 @@ class Recipe(Item):
             print(f"{product['amount']}x {product['name'].title().replace("-", " ")}")
 
 
-class Entity(Item):
-    def __init__(self, crafting_categories: list, crafting_speed: float, manufacturing_type: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.crafting_speed = crafting_speed
-        self.manufacturing_type = manufacturing_type
-        self.crafting_categories = crafting_categories
+class Entity:
+    def __init__(self, categories: list, speed: float, name: str, translated_name: str):
+        self.speed = speed
+        self.categories = categories
+        self.name = name
+        self.translated_name = translated_name
 
 
 class Ingredient:
@@ -67,16 +70,16 @@ class Ingredient:
 
     def chooseMachine(self, entities, buffs):
         if type(self.recipe) == Recipe:
-            possibilities = [i for i in entities if self.recipe.category in i.crafting_categories]
+            possibilities = [i for i in entities if self.recipe.category in i.categories]
         else:
-            possibilities = [i for i in entities if "smelting" in i.crafting_categories] # TODO NOT SMELTING, MINING
+            possibilities = [i for i in entities if "basic-solid" in i.categories]  # TODO NOT SMELTING, MINING
 
         self.machine = possibilities[possibilities.index([buff for buff in buffs if buff in possibilities][0])]
         self.machine = entities[entities.index(self.machine)]
 
     def calculate(self, entities, buffs):
         self.chooseMachine(entities, buffs)
-        self.machines_needed = self.amount / self.machine.crafting_speed['normal']
+        self.machines_needed = self.amount / self.machine.speed
 
     def __str__(self):
         return f"{self.recipe.translated_name} x {self.amount} ({self.machine} x {self.machines_needed})"

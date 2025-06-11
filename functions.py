@@ -4,108 +4,101 @@ from classes import *
 
 recipes = []
 entities = []
-fluids = []
+fuels = []
 items = []
-groups = {"logistics": [], "production": [], "intermediate-products": [], "combat": [], 'other': []}
+groups = {}
 choices = []
 buffs = []
 total_ingredients = []
 
 
-def ingestRecipes(recipesJson):
+def ingestRecipes(recipesJson, resourcesJson):
     for recipe in recipesJson:
-        recipe = recipesJson[recipe]
-        for ingredient in recipe['ingredients']:
-            if 'probability' in ingredient:
-                ingredient.pop('probability')
+        ingredients = [Ingredient(recipe=i['name'], amount=i['amount'], parent=recipe['key']) for i in
+                       recipe['ingredients']]
 
-        for product in recipe['products']:
-            product.pop('probability')
-
-        recipe.pop('allowed_effects')
-        recipe.pop('productivity_bonus')
-        if "main_product" in recipe:
-            recipe.pop('main_product')
-        recipe.pop('maximum_productivity')
         recipes.append(
-            Recipe(name=recipe['name'], order=recipe['order'], group=recipe['group'], subgroup=recipe['subgroup'],
-                   translated_name=recipe['translated_name'], products=recipe['products'],
-                   ingredients=recipe['ingredients'], energy=recipe['energy'], category=recipe['category']))
+            Recipe(name=recipe['key'], order=recipe['order'], subgroup=recipe['subgroup'],
+                   translated_name=recipe['localized_name']['en'], products=recipe['results'],
+                   ingredients=ingredients, energy=recipe['energy_required'], category=recipe['category']))
+
+    for resource in resourcesJson:
+        if "required_fluid" not in resource:
+            recipes.append(
+                Recipe(name=resource['key'], order='', subgroup='', translated_name=resource['localized_name']['en'],
+                       energy=0,
+                       category=resource['category'], products=resource['results'], ingredients=[]))
+        else:
+            recipes.append(
+                Recipe(name=resource['key'], order='', subgroup='', translated_name=resource['localized_name']['en'],
+                       energy=0,
+                       category=resource['category'], products=resource['results'],
+                       ingredients=[{{"name": resource['required_fluid'], "amount": resource['fluid_amount']}}]))
 
 
 def ingestItems(itemsJson):
     for item in itemsJson:
-        item = itemsJson[item]
         if "item" not in item['type']:
             continue
 
-        items.append(Item(name=item['name'], order=item['order'], group=item['group'], subgroup=item['subgroup'],
-                          translated_name=item['translated_name']))
+        items.append(Item(name=item['key'], order=item['order'], group=item['group'], subgroup=item['subgroup'],
+                          translated_name=item['localized_name']['en']))
 
 
-def ingestEntities(entitiesJson):
-    for entity in entitiesJson:
-        entity = entitiesJson[entity]
-
-        if 'parameter' in entity['name'] or 'recipe-unknown' in entity['name']:
-            continue
-
-        entity.pop('module_inventory_size')
-        entity.pop('width')
-        entity.pop('height')
-        entity.pop('flags')
-        if 'effect_receiver' in entity:
-            entity.pop('effect_receiver')
-        if 'drain' in entity:
-            entity.pop('drain')
-        if 'allowed_effects' in entity:
-            entity.pop('allowed_effects')
-        if "crafting_categories" in entity:
-            entities.append(
-                Entity(name=entity['name'], order=entity['order'], group=entity['group'], subgroup=entity['subgroup'],
-                       translated_name=entity['translated_name'], crafting_categories=entity['crafting_categories'],
-                       manufacturing_type=entity['type'], crafting_speed=entity['crafting_speed']))
-        else:
-            entities.append(
-                Entity(name=entity['name'], order=entity['order'], group=entity['group'], subgroup=entity['subgroup'],
-                       translated_name=entity['translated_name'], crafting_categories=[],
-                       manufacturing_type=entity['type'], crafting_speed=0))
+def ingestEntities(craftingmachinesJson, miningdrillsJson):
+    for entity in craftingmachinesJson:
+        entities.append(
+            Entity(name=entity['name'], translated_name=entity['localized_name']['en'], speed=entity['crafting_speed'],
+                   categories=entity['crafting_categories']))
+    for entity in miningdrillsJson:
+        entities.append(
+            Entity(name=entity['name'], translated_name=entity['localized_name']['en'], speed=entity['mining_speed'],
+                   categories=entity['resource_categories']))
 
 
-def ingestFluids(fluidsJson):
-    for fluid in fluidsJson:
-        fluid = fluidsJson[fluid]
-        if 'parameter' in fluid['name'] or 'fluid-unknown' in fluid['name']:
-            continue
-        fluid.pop('group')
-        fluid.pop('subgroup')
-        fluid.pop('fuel_value')
-        fluids.append(Item(name=fluid['name'], order=fluid['order'], group='fluids', subgroup='fluid',
-                           translated_name=fluid['translated_name']))
+def ingestGroups(groupsJson):
+    # Add all groups from groupsJson to groups as keys
+    for group in groupsJson:
+        groups.update({group})
+
+    # Only the items have groups, so need to iterate through items instead of recipes
+    for item in items:
+        if item in recipes:
+            groups[item.group].append(recipes[item])
+
+    # Remove any unnecessary groups
+    for group in groups.keys():
+        if not groups[group]:
+            groups.pop(group)
 
 
-def populateGroups():
-    for recipe in recipes:
-        groups[recipe.group].append(recipe)
+def ingestFuels(fuelJson):
+    for fuel in fuelJson:
+        if fuel['category'] == "chemical":
+            name = fuel['item_key'].strip().title().replace('-', ' ')
+            fuels.append(name)
 
 
 def ingest():
     with open("recipes-og.json") as file:
         json = load(file)
         recipesJson = json['recipes']
-        entitiesJson = json['entities']
-        fluidsJson = json['fluids']
+        craftingmachinesJson = json['crafting_machines']
+        miningdrillsJson = json['mining_drills']
         itemsJson = json['items']
+        resourcesJson = json['resources']
+        groupsJson = json['groups']
+        fuelJson = json['fuel']
 
-    ingestRecipes(recipesJson)
+    ingestRecipes(recipesJson, resourcesJson)
 
-    ingestEntities(entitiesJson)
-
-    ingestFluids(fluidsJson)
+    ingestEntities(craftingmachinesJson, miningdrillsJson)
 
     ingestItems(itemsJson)
 
-    populateGroups()
+    ingestFuels(fuelJson)
+
+    ingestGroups(groupsJson)
 
 
 def printRecipes(group: list):
@@ -223,11 +216,9 @@ def chooseResearch():
 
 
 def chooseBuffs():
-    # TODO Make these draw from entities[]
-    assembler = ["Assembling Machine 1", "Assembling Machine 2", "Assembling Machine 3"]
-    miner = ["Burner Mining Drill", "Electric Mining Drill"]
-    furnace = ["Stone Furnace", "Steel Furnace", "Electric Furnace"]
-    fuels = ["Wood", "Coal", "Solid Fuel", "Rocket Fuel", "Nuclear Fuel"]
+    assembler = [i for i in entities if "crafting" in i.category]
+    miner = [i for i in entities if "basic-solid" in i.category]
+    furnace = [i for i in entities if "smelting" in i.category]
 
     while True:
         try:
