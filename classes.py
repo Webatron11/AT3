@@ -44,7 +44,7 @@ class Recipe(Item):
     def printIngredients(self):
         print("---Ingredients---")
         for ingredient in self.ingredients:
-            print(f"{ingredient['amount']}x {ingredient['name'].title().replace("-", " ")}")
+            print(f"{ingredient.amount}x {ingredient.recipe.title().replace("-", " ")}")
 
     def printProducts(self):
         print("---Products---")
@@ -58,6 +58,12 @@ class Entity:
         self.categories = categories
         self.name = name
         self.translated_name = translated_name
+
+    def __str__(self):
+        return self.name
+
+    def __eq__(self, other):
+        return self.name == other
 
 
 class Ingredient:
@@ -74,8 +80,12 @@ class Ingredient:
         else:
             possibilities = [i for i in entities if "basic-solid" in i.categories]  # TODO NOT SMELTING, MINING
 
-        self.machine = possibilities[possibilities.index([buff for buff in buffs if buff in possibilities][0])]
-        self.machine = entities[entities.index(self.machine)]
+        if buffs in possibilities:
+            self.machine = possibilities[possibilities.index([buff for buff in buffs if buff in possibilities][0])]
+            self.machine = entities[entities.index(self.machine)]
+        else:
+            self.machine = possibilities[0]
+            self.machine = entities[entities.index(self.machine)]
 
     def calculate(self, entities, buffs):
         self.chooseMachine(entities, buffs)

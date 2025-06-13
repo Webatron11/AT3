@@ -7,6 +7,7 @@ entities = []
 fuels = []
 items = []
 groups = {}
+subgroups = {}
 choices = []
 buffs = []
 total_ingredients = []
@@ -16,30 +17,33 @@ def ingestRecipes(recipesJson, resourcesJson):
     for recipe in recipesJson:
         ingredients = [Ingredient(recipe=i['name'], amount=i['amount'], parent=recipe['key']) for i in
                        recipe['ingredients']]
+        group = [i for i in subgroups.keys() if recipe['subgroup'] in subgroups[i]][0]
 
         recipes.append(
-            Recipe(name=recipe['key'], order=recipe['order'], subgroup=recipe['subgroup'],
+            Recipe(name=recipe['key'], order=recipe['order'], group=group, subgroup=recipe['subgroup'],
                    translated_name=recipe['localized_name']['en'], products=recipe['results'],
                    ingredients=ingredients, energy=recipe['energy_required'], category=recipe['category']))
 
     for resource in resourcesJson:
         if "required_fluid" not in resource:
             recipes.append(
-                Recipe(name=resource['key'], order='', subgroup='', translated_name=resource['localized_name']['en'],
+                Recipe(name=resource['key'], order='', group='', subgroup='',
+                       translated_name=resource['localized_name']['en'],
                        energy=0,
                        category=resource['category'], products=resource['results'], ingredients=[]))
         else:
             recipes.append(
-                Recipe(name=resource['key'], order='', subgroup='', translated_name=resource['localized_name']['en'],
+                Recipe(name=resource['key'], order='', group='', subgroup='',
+                       translated_name=resource['localized_name']['en'],
                        energy=0,
                        category=resource['category'], products=resource['results'],
-                       ingredients=[{{"name": resource['required_fluid'], "amount": resource['fluid_amount']}}]))
+                       ingredients=[{"name": resource['required_fluid'], "amount": resource['fluid_amount']}]))
 
 
 def ingestItems(itemsJson):
     for item in itemsJson:
-        if "item" not in item['type']:
-            continue
+        # if "item" not in item['type']:
+        #     continue
 
         items.append(Item(name=item['key'], order=item['order'], group=item['group'], subgroup=item['subgroup'],
                           translated_name=item['localized_name']['en']))
@@ -48,28 +52,35 @@ def ingestItems(itemsJson):
 def ingestEntities(craftingmachinesJson, miningdrillsJson):
     for entity in craftingmachinesJson:
         entities.append(
-            Entity(name=entity['name'], translated_name=entity['localized_name']['en'], speed=entity['crafting_speed'],
+            Entity(name=entity['key'], translated_name=entity['localized_name']['en'], speed=entity['crafting_speed'],
                    categories=entity['crafting_categories']))
     for entity in miningdrillsJson:
         entities.append(
-            Entity(name=entity['name'], translated_name=entity['localized_name']['en'], speed=entity['mining_speed'],
+            Entity(name=entity['key'], translated_name=entity['localized_name']['en'], speed=entity['mining_speed'],
                    categories=entity['resource_categories']))
 
 
 def ingestGroups(groupsJson):
     # Add all groups from groupsJson to groups as keys
     for group in groupsJson:
-        groups.update({group})
+        groups.update({group: []})
+        subgroups.update({group: [i for i in groupsJson[group]['subgroups'].keys()]})
 
+
+def populateGroups():
     # Only the items have groups, so need to iterate through items instead of recipes
     for item in items:
         if item in recipes:
-            groups[item.group].append(recipes[item])
+            groups[item.group].append(recipes[recipes.index(item)])
 
     # Remove any unnecessary groups
+    pops = []
     for group in groups.keys():
         if not groups[group]:
-            groups.pop(group)
+            pops.append(group)
+
+    for i in pops:
+        groups.pop(i)
 
 
 def ingestFuels(fuelJson):
@@ -80,7 +91,7 @@ def ingestFuels(fuelJson):
 
 
 def ingest():
-    with open("recipes-og.json") as file:
+    with open("vanilla-2.0.10.json") as file:
         json = load(file)
         recipesJson = json['recipes']
         craftingmachinesJson = json['crafting_machines']
@@ -90,15 +101,17 @@ def ingest():
         groupsJson = json['groups']
         fuelJson = json['fuel']
 
+    ingestItems(itemsJson)
+
+    ingestGroups(groupsJson)
+
     ingestRecipes(recipesJson, resourcesJson)
 
     ingestEntities(craftingmachinesJson, miningdrillsJson)
 
-    ingestItems(itemsJson)
-
     ingestFuels(fuelJson)
 
-    ingestGroups(groupsJson)
+    populateGroups()
 
 
 def printRecipes(group: list):
@@ -216,9 +229,13 @@ def chooseResearch():
 
 
 def chooseBuffs():
-    assembler = [i for i in entities if "crafting" in i.category]
-    miner = [i for i in entities if "basic-solid" in i.category]
-    furnace = [i for i in entities if "smelting" in i.category]
+    assembler = [i.name for i in entities if "crafting" in i.categories]
+    miner = [i.name for i in entities if "basic-solid" in i.categories]
+    furnace = [i.name for i in entities if "smelting" in i.categories]
+
+    chosenAssembler = False
+    chosenMiner = False
+    chosenFurnace = False
 
     while True:
         try:
@@ -233,30 +250,32 @@ def chooseBuffs():
         match choice:
             case 1:
                 chooseBuilding(assembler)
+                chosenAssembler = True
             case 2:
                 chooseBuilding(miner)
                 chooseResearch()
+                chosenMiner = True
             case 3:
                 chooseBuilding(furnace)
-                chooseBuilding(fuels)
+                if "electric-furnace" not in buffs:
+                    chooseBuilding(fuels)
+                chosenFurnace = True
             case _:
                 print("Invalid choice. Try again with a valid choice (1-4)")
 
-        if "assembly" in buffs and "mining" in buffs and "furnace" in buffs:
+        if chosenAssembler and chosenMiner and chosenFurnace:
             break
 
 
 def calculate(recipe: Recipe):
     for ingredient in recipe.ingredients:
-        if ingredient['type'] == 'fluid':
-            total_ingredients.append(
-                Ingredient(recipe=fluids[fluids.index(ingredient['name'])], amount=ingredient['amount'], parent=recipe))
+        ingredientItem = items[items.index(ingredient.recipe)]
+        if ingredientItem.name == "petroleum-gas" or ingredientItem.name == "heavy-oil" or ingredientItem.name == "light-oil":
+            total_ingredients.append(Ingredient(recipe=recipes[recipes.index('advanced-oil-processing')], amount=ingredient.amount, parent=recipe))
+            calculate(recipes[recipes.index("advanced-oil-processing")])
             continue
-        if items[items.index(ingredient['name'])].subgroup != "raw-resource":
+        elif ingredientItem.subgroup != "raw-resource":
             total_ingredients.append(
-                Ingredient(recipe=recipes[recipes.index(ingredient['name'])], amount=ingredient['amount'],
+                Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], amount=ingredient.amount,
                            parent=recipe))
-            calculate(recipes[recipes.index(ingredient['name'])])
-        else:
-            total_ingredients.append(
-                Ingredient(recipe=items[items.index(ingredient['name'])], amount=ingredient['amount'], parent=recipe))
+        calculate(recipes[recipes.index(ingredient.recipe)])
