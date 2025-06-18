@@ -75,6 +75,10 @@ class Ingredient:
         self.machines_needed = machines_needed
 
     def chooseMachine(self, entities, buffs):
+        if self.recipe.category == "basic-fluid":
+            self.machine = "N/A"
+            return
+
         if type(self.recipe) == Recipe:
             possibilities = [i for i in entities if self.recipe.category in i.categories]
         else:
@@ -89,7 +93,10 @@ class Ingredient:
 
     def calculate(self, entities, buffs):
         self.chooseMachine(entities, buffs)
-        self.machines_needed = self.amount / self.machine.speed
+        if self.recipe.category == "basic-fluid":
+            self.machines_needed = 0
+        else:
+            self.machines_needed = self.amount * (self.recipe.energy / self.machine.speed)
 
     def __str__(self):
         return f"{self.recipe.translated_name} x {self.amount} ({self.machine} x {self.machines_needed})"

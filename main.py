@@ -1,4 +1,5 @@
-from functions import ingest, choices, buffs, calculate, total_ingredients, entities, chooseBuffs, displayCategories, recipes
+from functions import ingest, choices, buffs, calculate, total_ingredients, entities, chooseBuffs, displayCategories, \
+    recipes, Ingredient
 
 ingest()
 # displayCategories()
@@ -8,6 +9,7 @@ buffs = ['assembling-machine-2', 'coal', 'electric-furnace', 'electric-mining-dr
 choices = [recipes[recipes.index('chemical-science-pack')]]
 
 for choice in choices:
+    total_ingredients.append(Ingredient(recipe=choice, amount=choice.products[0]['amount'], parent=choice))
     calculate(choice)
 
 for ingredient in total_ingredients:
