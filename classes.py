@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-# from functions import entities, buffs
+# from functions import total_ingredients, recipes
 
 
 class Category(Enum):
@@ -67,9 +67,9 @@ class Entity:
 
 
 class Ingredient:
-    def __init__(self, recipe, amount: float, parent: Recipe, machines_needed=0.0):
+    def __init__(self, recipe, parent: Recipe, machines_needed=0.0, required=0.0):
         self.recipe = recipe
-        self.amount = amount
+        self.required = required
         self.parent = parent
         self.machine = ''
         self.machines_needed = machines_needed
@@ -91,12 +91,37 @@ class Ingredient:
             self.machine = possibilities[0]
             self.machine = entities[entities.index(self.machine)]
 
-    def calculate(self, entities, buffs):
+    def calculate(self, entities, buffs, total_ingredients):
         self.chooseMachine(entities, buffs)
+
+        parentIngredient = total_ingredients[total_ingredients.index(self.parent)]
+        parentIngredients = self.parent.ingredients
+
+        recipeOutput = self.recipe.products[0]['amount']
+        itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput
+        if parentIngredient == self:
+            return
+        parentNeeds = parentIngredients[parentIngredients.index(self.recipe.name)].required
+        parentRequired = parentIngredient.required
+        parentRecipeOutput = self.parent.products[0]['amount']
+
+        if self.recipe.name == 'copper-cable':
+            self.required = recipeOutput * (parentRequired / parentRecipeOutput)
+        if self.recipe.category == 'basic-fluid':
+            pass
+        else:
+            self.required = (parentNeeds / recipeOutput) * (parentRequired / parentRecipeOutput)
+
         if self.recipe.category == "basic-fluid":
             self.machines_needed = 0
         else:
-            self.machines_needed = self.amount * (self.recipe.energy / self.machine.speed)
+            self.machines_needed = self.required * itemsPerSecond
 
     def __str__(self):
-        return f"{self.recipe.translated_name} x {self.amount} ({self.machine} x {self.machines_needed})"
+        return f"{self.recipe.translated_name} x {self.required} ({self.machine} x {self.machines_needed})"
+
+    def __eq__(self, other):
+        if type(self.recipe) == Recipe:
+            return self.recipe.name == other
+        else:
+            return self.recipe == other

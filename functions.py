@@ -15,7 +15,7 @@ total_ingredients = []
 
 def ingestRecipes(recipesJson, resourcesJson):
     for recipe in recipesJson:
-        ingredients = [Ingredient(recipe=i['name'], amount=i['amount'], parent=recipe['key']) for i in
+        ingredients = [Ingredient(recipe=i['name'], required=i['amount'], parent=recipe['key']) for i in
                        recipe['ingredients']]
         group = [i for i in subgroups.keys() if recipe['subgroup'] in subgroups[i]][0]
 
@@ -269,13 +269,16 @@ def chooseBuffs():
 
 def calculate(recipe: Recipe):
     for ingredient in recipe.ingredients:
+        requiredAmount = ingredient.required * recipes[recipes.index(recipe)].products[0]['amount']
         ingredientItem = items[items.index(ingredient.recipe)]
+
         if ingredientItem.name == "petroleum-gas" or ingredientItem.name == "heavy-oil" or ingredientItem.name == "light-oil":
-            total_ingredients.append(Ingredient(recipe=recipes[recipes.index('advanced-oil-processing')], amount=ingredient.amount, parent=recipe))
+            total_ingredients.append(
+                Ingredient(recipe=recipes[recipes.index('advanced-oil-processing')], required=requiredAmount,
+                           parent=recipe))
             calculate(recipes[recipes.index("advanced-oil-processing")])
             continue
         elif ingredientItem.subgroup != "raw-resource":
-            total_ingredients.append(
-                Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], amount=ingredient.amount,
-                           parent=recipe))
+            total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=recipe))
+        # TODO ADD ORE HANDLING
         calculate(recipes[recipes.index(ingredient.recipe)])
