@@ -75,54 +75,60 @@ class Ingredient:
         self.machines_needed = machines_needed
 
     def chooseMachine(self, entities, buffs):
-        # if self.recipe.category == "basic-fluid":
-        #     self.machine = entities.index('')
-        #     return
+        possibilities = [i for i in entities if self.recipe.category in i.categories]
 
-        if type(self.recipe) == Recipe:
-            possibilities = [i for i in entities if self.recipe.category in i.categories]
-        else:
-            possibilities = [i for i in entities if "basic-solid" in i.categories]  # TODO NOT SMELTING, MINING
-
-        if buffs in possibilities:
+        if len(possibilities) > 1:
             self.machine = possibilities[possibilities.index([buff for buff in buffs if buff in possibilities][0])]
-            self.machine = entities[entities.index(self.machine)]
         else:
             self.machine = possibilities[0]
-            self.machine = entities[entities.index(self.machine)]
+
+        self.machine = entities[entities.index(self.machine)]
 
     def calculate(self, entities, buffs, total_ingredients):
+        # TODO Add miner efficiency buffs
         self.chooseMachine(entities, buffs)
 
-        parentIngredient = total_ingredients[total_ingredients.index(self.parent)]
-        parentIngredients = self.parent.ingredients
+        # parentIngredient is the Ingredient object of the parent, located in the total_ingredients array
+        # parentIngredients contains all ingredients in the parent recipe
+        if type(self.parent) != Ingredient:
+            parentIngredient = total_ingredients[total_ingredients.index(self.parent)]
+            parentIngredients = self.parent.ingredients
+        else:
+            parentIngredient = self.parent
+            parentIngredients = self.parent.recipe.ingredients
 
-        recipeOutput = self.recipe.products[0]['amount']
-        itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput
-
+        # TODO Change so it works with choice recipe - just does nothing rn
         if parentIngredient == self:
             return
 
-        if self.recipe.name == 'basic-oil-processing':
-            parentNeeds = parentIngredients[parentIngredients.index('petroleum-gas')].required
+        # parentNeeds is how much of the ingredient is required for the parent recipe
+        # recipeOutput is how much product the ingredient's recipe will output
+
+        if self.recipe.name == 'advanced-oil-processing':
+            product = [i for i in parentIngredients if i in [i['name'] for i in self.recipe.products]][0]
+            parentNeeds = parentIngredients[parentIngredients.index(product)].required
+
+            index = self.recipe.products.index([i for i in self.recipe.products if i['name'] == product][0])
+            recipeOutput = self.recipe.products[index]['amount']
         else:
             parentNeeds = parentIngredients[parentIngredients.index(self.recipe.name)].required
+            recipeOutput = self.recipe.products[0]['amount']
 
+        # itemsPerSecond is how much product the combo of ingredient recipe and machine choice will output
+        itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput
+        # parentRequired is how much of the parent recipe is required
         parentRequired = parentIngredient.required
-        parentRecipeOutput = self.parent.products[0]['amount']
 
-        if self.recipe.name == 'copper-cable':
+        parentRecipeOutput = parentIngredient.recipe.products[0]['amount']
+
+        if recipeOutput == 2 or self.recipe.category == 'chemistry' or self.recipe.category == 'oil-processing':
             self.required = parentNeeds * (parentRequired / parentRecipeOutput)
-        elif self.recipe.category == 'oil-processing':
-            pass
+        elif self.recipe.name == 'water':
+            self.required = parentIngredient.machines_needed * (parentIngredients[parentIngredients.index('water')].required / parentIngredient.recipe.energy)
         else:
             self.required = (parentNeeds / recipeOutput) * (parentRequired / parentRecipeOutput)
 
-        if self.recipe.category == "basic-fluid":
-            self.machines_needed = 0
-        else:
-            self.machines_needed = self.required * itemsPerSecond
-
+        self.machines_needed = self.required * itemsPerSecond
 
     def __str__(self):
         return f"{self.recipe.translated_name} x {self.required} ({self.machine} x {self.machines_needed})"

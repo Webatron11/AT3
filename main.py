@@ -6,7 +6,7 @@ ingest()
 # chooseBuffs()
 
 buffs = ['assembling-machine-2', 'coal', 'electric-furnace', 'electric-mining-drill', 0.0]
-choices = [recipes[recipes.index('chemical-science-pack')]]
+choices = [recipes[recipes.index('construction-robot')]]
 
 for choice in choices:
     total_ingredients.append(Ingredient(recipe=choice, required=2, parent=choice))

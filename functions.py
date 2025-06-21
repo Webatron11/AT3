@@ -17,7 +17,7 @@ def ingestRecipes(recipesJson, resourcesJson):
     for recipe in recipesJson:
         ingredients = [Ingredient(recipe=i['name'], required=i['amount'], parent=recipe['key']) for i in
                        recipe['ingredients']]
-        group = [i for i in subgroups.keys() if recipe['subgroup'] in subgroups[i]][0]
+        group = subgroups[recipe['subgroup']]
 
         recipes.append(
             Recipe(name=recipe['key'], order=recipe['order'], group=group, subgroup=recipe['subgroup'],
@@ -29,13 +29,13 @@ def ingestRecipes(recipesJson, resourcesJson):
             recipes.append(
                 Recipe(name=resource['key'], order='', group='', subgroup='',
                        translated_name=resource['localized_name']['en'],
-                       energy=0,
+                       energy=resource['mining_time'],
                        category=resource['category'], products=resource['results'], ingredients=[]))
         else:
             recipes.append(
                 Recipe(name=resource['key'], order='', group='', subgroup='',
                        translated_name=resource['localized_name']['en'],
-                       energy=0,
+                       energy=resource['mining_time'],
                        category=resource['category'], products=resource['results'],
                        ingredients=[{"name": resource['required_fluid'], "amount": resource['fluid_amount']}]))
 
@@ -64,14 +64,17 @@ def ingestGroups(groupsJson):
     # Add all groups from groupsJson to groups as keys
     for group in groupsJson:
         groups.update({group: []})
-        subgroups.update({group: [i for i in groupsJson[group]['subgroups'].keys()]})
+
+    # Add all subgroups to a dictionary with the subgroup name as key and group name as value
+    for group in groups.keys():
+        for i in groupsJson[group]['subgroups']:
+            subgroups.update({i: group})
 
 
 def populateGroups():
     # Only the items have groups, so need to iterate through items instead of recipes
-    for item in items:
-        if item in recipes:
-            groups[item.group].append(recipes[recipes.index(item)])
+    for group in groups.keys():
+        groups[group].append([i for i in recipes if i.group == group])
 
     # Remove any unnecessary groups
     pops = []
@@ -269,18 +272,19 @@ def chooseBuffs():
 
 def calculate(recipe: Recipe):
     for ingredient in recipe.ingredients:
-        requiredAmount = ingredient.required * recipes[recipes.index(recipe)].products[0]['amount']
+        # requiredAmount = ingredient.required * recipes[recipes.index(recipe)].products[0]['amount']
         ingredientItem = items[items.index(ingredient.recipe)]
 
         if ingredientItem.name == "petroleum-gas" or ingredientItem.name == "heavy-oil" or ingredientItem.name == "light-oil":
-            total_ingredients.append(
-                Ingredient(recipe=recipes[recipes.index('basic-oil-processing')], required=requiredAmount,
-                           parent=recipe))
-            calculate(recipes[recipes.index("basic-oil-processing")])
+            total_ingredients.append(Ingredient(recipe=recipes[recipes.index('advanced-oil-processing')], parent=recipe))
+            calculate(recipes[recipes.index("advanced-oil-processing")])
             continue
-        elif ingredientItem.subgroup == "raw-resource":
-            total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=recipe))
         else:
-            total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=recipe))
-        # TODO ADD ORE HANDLING
+            # Checks if the last ingredient in total_ingredients has the current ingredient in its ingredient list
+            if ingredientItem in total_ingredients[-1].recipe.ingredients:
+                # If so, makes the last item in total_ingredients the parent, in place of the parent recipe.
+                total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=total_ingredients[-1]))
+            else:
+                total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=recipe))
+
         calculate(recipes[recipes.index(ingredient.recipe)])
