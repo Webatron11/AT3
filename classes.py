@@ -75,9 +75,9 @@ class Ingredient:
         self.machines_needed = machines_needed
 
     def chooseMachine(self, entities, buffs):
-        if self.recipe.category == "basic-fluid":
-            self.machine = "N/A"
-            return
+        # if self.recipe.category == "basic-fluid":
+        #     self.machine = entities.index('')
+        #     return
 
         if type(self.recipe) == Recipe:
             possibilities = [i for i in entities if self.recipe.category in i.categories]
@@ -99,15 +99,21 @@ class Ingredient:
 
         recipeOutput = self.recipe.products[0]['amount']
         itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput
+
         if parentIngredient == self:
             return
-        parentNeeds = parentIngredients[parentIngredients.index(self.recipe.name)].required
+
+        if self.recipe.name == 'basic-oil-processing':
+            parentNeeds = parentIngredients[parentIngredients.index('petroleum-gas')].required
+        else:
+            parentNeeds = parentIngredients[parentIngredients.index(self.recipe.name)].required
+
         parentRequired = parentIngredient.required
         parentRecipeOutput = self.parent.products[0]['amount']
 
         if self.recipe.name == 'copper-cable':
-            self.required = recipeOutput * (parentRequired / parentRecipeOutput)
-        if self.recipe.category == 'basic-fluid':
+            self.required = parentNeeds * (parentRequired / parentRecipeOutput)
+        elif self.recipe.category == 'oil-processing':
             pass
         else:
             self.required = (parentNeeds / recipeOutput) * (parentRequired / parentRecipeOutput)
@@ -116,6 +122,7 @@ class Ingredient:
             self.machines_needed = 0
         else:
             self.machines_needed = self.required * itemsPerSecond
+
 
     def __str__(self):
         return f"{self.recipe.translated_name} x {self.required} ({self.machine} x {self.machines_needed})"

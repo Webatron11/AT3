@@ -274,11 +274,13 @@ def calculate(recipe: Recipe):
 
         if ingredientItem.name == "petroleum-gas" or ingredientItem.name == "heavy-oil" or ingredientItem.name == "light-oil":
             total_ingredients.append(
-                Ingredient(recipe=recipes[recipes.index('advanced-oil-processing')], required=requiredAmount,
+                Ingredient(recipe=recipes[recipes.index('basic-oil-processing')], required=requiredAmount,
                            parent=recipe))
-            calculate(recipes[recipes.index("advanced-oil-processing")])
+            calculate(recipes[recipes.index("basic-oil-processing")])
             continue
-        elif ingredientItem.subgroup != "raw-resource":
+        elif ingredientItem.subgroup == "raw-resource":
+            total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=recipe))
+        else:
             total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=recipe))
         # TODO ADD ORE HANDLING
         calculate(recipes[recipes.index(ingredient.recipe)])
