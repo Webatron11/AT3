@@ -37,7 +37,7 @@ def ingestRecipes(recipesJson, resourcesJson):
                        translated_name=resource['localized_name']['en'],
                        energy=resource['mining_time'],
                        category=resource['category'], products=resource['results'],
-                       ingredients=[{"name": resource['required_fluid'], "amount": resource['fluid_amount']}]))
+                       ingredients=[Ingredient(required=resource['fluid_amount'], parent=resource['key'], recipe=resource['required_fluid'])]))
 
 
 def ingestItems(itemsJson):
@@ -278,6 +278,12 @@ def calculate(recipe: Recipe):
         if ingredientItem.name == "petroleum-gas" or ingredientItem.name == "heavy-oil" or ingredientItem.name == "light-oil":
             total_ingredients.append(Ingredient(recipe=recipes[recipes.index('advanced-oil-processing')], parent=recipe))
             calculate(recipes[recipes.index("advanced-oil-processing")])
+            continue
+        elif "fish" in ingredientItem.name:
+            continue
+        elif "uranium-2" in ingredientItem.name:
+            total_ingredients.append(Ingredient(recipe=recipes[recipes.index('uranium-processing')], parent=recipe))
+            calculate(recipes[recipes.index("uranium-processing")])
             continue
         else:
             # Checks if the last ingredient in total_ingredients has the current ingredient in its ingredient list

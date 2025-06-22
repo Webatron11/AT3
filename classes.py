@@ -85,7 +85,6 @@ class Ingredient:
         self.machine = entities[entities.index(self.machine)]
 
     def calculate(self, entities, buffs, total_ingredients):
-        # TODO Add miner efficiency buffs
         self.chooseMachine(entities, buffs)
 
         # parentIngredient is the Ingredient object of the parent, located in the total_ingredients array
@@ -97,25 +96,28 @@ class Ingredient:
             parentIngredient = self.parent
             parentIngredients = self.parent.recipe.ingredients
 
-        # TODO Change so it works with choice recipe - just does nothing rn
-        if parentIngredient == self:
-            return
-
         # parentNeeds is how much of the ingredient is required for the parent recipe
         # recipeOutput is how much product the ingredient's recipe will output
-
-        if self.recipe.name == 'advanced-oil-processing':
+        if self.recipe.name == 'advanced-oil-processing' or self.recipe.name == 'uranium-processing':
             product = [i for i in parentIngredients if i in [i['name'] for i in self.recipe.products]][0]
             parentNeeds = parentIngredients[parentIngredients.index(product)].required
 
             index = self.recipe.products.index([i for i in self.recipe.products if i['name'] == product][0])
             recipeOutput = self.recipe.products[index]['amount']
+        elif parentIngredient == self:
+            parentNeeds = self.required
+            recipeOutput = self.recipe.products[0]['amount']
         else:
             parentNeeds = parentIngredients[parentIngredients.index(self.recipe.name)].required
             recipeOutput = self.recipe.products[0]['amount']
 
         # itemsPerSecond is how much product the combo of ingredient recipe and machine choice will output
         itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput
+        if self.recipe.category == 'basic-solid':
+            energy = self.recipe.energy / (1+buffs[4])
+            itemsPerSecond = (energy / self.machine.speed) / recipeOutput
+        else:
+            itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput
         # parentRequired is how much of the parent recipe is required
         parentRequired = parentIngredient.required
 
