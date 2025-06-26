@@ -83,6 +83,7 @@ def ingestGroups(groupsJson):
 
     # Add all subgroups to a dictionary with the subgroup name as key and group name as value
     for group in keys:
+
         for i in groupsJson[group]['subgroups']:
             subgroups.update({i: group})
 
@@ -363,20 +364,22 @@ def calculateIngredients(recipe: Recipe):
             calculateIngredients(recipes[recipes.index("uranium-processing")])
             continue
         else:
-            # Checks if the last ingredient in total_ingredients has the current ingredient in its ingredient list
-            if ingredientItem in total_ingredients[-1].recipe.ingredients:
-                # If so, makes the last item in total_ingredients the parent, in place of the parent recipe.
-                total_ingredients.append(
-                    Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=total_ingredients[-1]))
-            else:
-                total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=recipe))
+            # # Checks if the last ingredient in total_ingredients has the current ingredient in its ingredient list
+            # if ingredientItem in total_ingredients[-1].recipe.ingredients:
+            #     # If so, makes the last item in total_ingredients the parent, in place of the parent recipe.
+            #     total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=total_ingredients[-1]))
+            # else:
+            total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=recipe))
 
         calculateIngredients(recipes[recipes.index(ingredient.recipe)])
 
 
 def calculateResult():
+    global buffs
+    global choices
+
     buffs = ['assembling-machine-2', 'electric-mining-drill', 0.30000000000000004, 'electric-furnace']
-    choices = [[recipes[recipes.index("transport-belt")], 2]]
+    choices = [[recipes[recipes.index("spidertron")], 1]]
 
     for choice in choices:
         total_ingredients.append(Ingredient(recipe=choice[0], required=choice[1], parent=choice[0]))
@@ -391,9 +394,7 @@ def defineOrder():
     global order
 
 
-
 def collateResult():
-    # TODO Not right... Not sure where or why
     global ingredientsDict
     global ingredientsTotal
 
@@ -405,6 +406,7 @@ def collateResult():
 
     for key in ingredientsSet:
         for ingredient in total_ingredients:
+            print(ingredient)
             if ingredient.recipe.name == key:
                 ingredientsDict[key].append([ingredient.parent, [ingredient.machines_needed, 0], [ingredient.required, 0]])
 
@@ -428,10 +430,26 @@ def printResults():
     global ingredientsTotal
     global ingredientsDict
     global total_ingredients
+    global choices
 
-    table = PrettyTable(['Number', 'Recipe', 'Machines Needed', 'Items Needed'])
+    table = PrettyTable(['Number', 'Recipe', 'Machines Needed', 'Items Needed', 'distance'])
 
     for i, ingredient in enumerate(ingredientsTotal.keys()):
-        table.add_row([i, ingredient.title().replace("-", " "), round(ingredientsTotal[ingredient][1], 1), round(ingredientsTotal[ingredient][0], 1)])
+        parentIndexTotal = 0
+        ingredientCount = 0
+        for x in [i for i in total_ingredients if i.recipe.name == ingredient]:
+            parentIndexTotal += x.parentIndex
+            ingredientCount += 1
+
+        distance = parentIndexTotal
+        if ingredient == choices[0][0]:
+            ingredientsTotal[ingredient].append(0)
+        else:
+            ingredientsTotal[ingredient].append(distance)
+
+        table.add_row([0, ingredient.title().replace("-", " "), round(ingredientsTotal[ingredient][1], 1), round(ingredientsTotal[ingredient][0], 1), ingredientsTotal[ingredient][2]])
+
+    table.sortby = "distance"
+
 
     print(table)

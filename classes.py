@@ -64,12 +64,13 @@ class Entity:
 
 
 class Ingredient:
-    def __init__(self, recipe, parent: Recipe, machines_needed=0.0, required=0.0):
+    def __init__(self, recipe, parent: Recipe, machines_needed=0.0, required=0.0, parentIndex=0):
         self.recipe = recipe
         self.required = required
         self.parent = parent
         self.machine = ''
         self.machines_needed = machines_needed
+        self.parentIndex = parentIndex
 
     def chooseMachine(self, entities, buffs):
         possibilities = [i for i in entities if self.recipe.category in i.categories]
@@ -82,14 +83,18 @@ class Ingredient:
         self.machine = entities[entities.index(self.machine)]
 
     def calculate(self, entities, buffs, total_ingredients):
-        # TODO Fix self logic - doesnt calculate correctly
         self.chooseMachine(entities, buffs)
 
         # parentIngredient is the Ingredient object of the parent, located in the total_ingredients array
         # parentIngredients contains all ingredients in the parent recipe
         if type(self.parent) != Ingredient:
-            parentIngredient = total_ingredients[total_ingredients.index(self.parent)]
+            counter = 1
+            for ingredient in total_ingredients:
+                if ingredient.required != 0:
+                    counter += 1
+            parentIngredient = total_ingredients[0:counter][::-1][total_ingredients[0:counter][::-1].index(self.parent)]
             parentIngredients = self.parent.ingredients
+            self.parentIndex = counter
         else:
             parentIngredient = self.parent
             parentIngredients = self.parent.recipe.ingredients
@@ -121,13 +126,12 @@ class Ingredient:
         parentRequired = parentIngredient.required
         parentRecipeOutput = parentIngredient.recipe.products[0]['amount']
 
-        if recipeOutput == 2 or self.recipe.category == 'chemistry' or self.recipe.category == 'oil-processing':
+        if parentIngredient == self:
+            self.required = parentNeeds
+        elif recipeOutput == 2 or self.recipe.category == 'chemistry' or self.recipe.category == 'oil-processing':
             self.required = parentNeeds * (parentRequired / parentRecipeOutput)
         elif self.recipe.name == 'water':
             self.required = parentIngredient.machines_needed * (parentIngredients[parentIngredients.index('water')].required / parentIngredient.recipe.energy)
-        elif parentIngredient == self:
-            # self.required (inputted needed amount) * items per second of machine
-            pass
         else:
             self.required = (parentNeeds / recipeOutput) * (parentRequired / parentRecipeOutput)
 
