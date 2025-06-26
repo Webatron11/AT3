@@ -1,9 +1,6 @@
 from enum import Enum
 
 
-# from functions import total_ingredients, recipes
-
-
 class Category(Enum):
     SMELTING = "smelting"
     CHEMISTRY = "chemistry"
@@ -44,7 +41,7 @@ class Recipe(Item):
     def printIngredients(self):
         print("---Ingredients---")
         for ingredient in self.ingredients:
-            print(f"{ingredient.amount}x {ingredient.recipe.title().replace("-", " ")}")
+            print(f"{ingredient.required}x {ingredient.recipe.title().replace("-", " ")}")
 
     def printProducts(self):
         print("---Products---")
@@ -85,6 +82,7 @@ class Ingredient:
         self.machine = entities[entities.index(self.machine)]
 
     def calculate(self, entities, buffs, total_ingredients):
+        # TODO Fix self logic - doesnt calculate correctly
         self.chooseMachine(entities, buffs)
 
         # parentIngredient is the Ingredient object of the parent, located in the total_ingredients array
@@ -112,21 +110,24 @@ class Ingredient:
             recipeOutput = self.recipe.products[0]['amount']
 
         # itemsPerSecond is how much product the combo of ingredient recipe and machine choice will output
-        itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput
         if self.recipe.category == 'basic-solid':
-            energy = self.recipe.energy / (1+buffs[4])
+            buff = [i for i in buffs if type(i) == float][0]
+            energy = self.recipe.energy / (1 + buff)
             itemsPerSecond = (energy / self.machine.speed) / recipeOutput
         else:
             itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput
+
         # parentRequired is how much of the parent recipe is required
         parentRequired = parentIngredient.required
-
         parentRecipeOutput = parentIngredient.recipe.products[0]['amount']
 
         if recipeOutput == 2 or self.recipe.category == 'chemistry' or self.recipe.category == 'oil-processing':
             self.required = parentNeeds * (parentRequired / parentRecipeOutput)
         elif self.recipe.name == 'water':
             self.required = parentIngredient.machines_needed * (parentIngredients[parentIngredients.index('water')].required / parentIngredient.recipe.energy)
+        elif parentIngredient == self:
+            # self.required (inputted needed amount) * items per second of machine
+            pass
         else:
             self.required = (parentNeeds / recipeOutput) * (parentRequired / parentRecipeOutput)
 
