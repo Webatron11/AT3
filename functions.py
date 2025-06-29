@@ -16,6 +16,11 @@ rate = 0
 ingredientsTotal = {}
 ingredientsDict = {}
 order = []
+tableRows = []
+
+
+def returnDistance(x):
+    return x[4]
 
 
 def ingestRecipes(recipesJson, resourcesJson):
@@ -426,11 +431,58 @@ def collateResult():
         ingredientsTotal[key] = [totalRequired, totalMachines]
 
 
+def printDetails(choice: int):
+    global total_ingredients
+    global tableRows
+
+    # TODO Choice is wrong
+    ingredientName = tableRows[choice]
+    ingredients = []
+
+    for ingredient in total_ingredients:
+        if ingredient.recipe.name == ingredientName.lower().replace(" ", "-"):
+            ingredients.append(ingredient)
+
+    print(ingredients)
+
+
+def detailResults():
+    global tableRows
+
+    while True:
+        length = len(tableRows)
+
+        choice = input(f"(1-{length}) Select an ingredient for more information \n"
+                       f"({length + 1}) Return Home \n"
+                       f"({length + 2}) Save Output \n"
+                       f"Input your choice: ")
+
+        try:
+            choice = int(choice)
+        except ValueError:
+            print("Invalid entry, please try again. Make sure you are entering a number.")
+            continue
+
+        if 0 <= choice <= length:
+            printDetails(choice)
+            continue
+        elif choice == 1:
+            # Return home
+            break
+        elif choice == 2:
+            # Save output
+            break
+        else:
+            print(f"Please try again with a number between 1 and {length + 2}")
+            continue
+
+
 def printResults():
     global ingredientsTotal
     global ingredientsDict
     global total_ingredients
     global choices
+    global tableRows
 
     table = PrettyTable(['Number', 'Recipe', 'Machines Needed', 'Items Needed', 'distance'])
 
@@ -447,9 +499,14 @@ def printResults():
         else:
             ingredientsTotal[ingredient].append(distance)
 
-        table.add_row([0, ingredient.title().replace("-", " "), round(ingredientsTotal[ingredient][1], 1), round(ingredientsTotal[ingredient][0], 1), ingredientsTotal[ingredient][2]])
+        table.add_row([i, ingredient.title().replace("-", " "), round(ingredientsTotal[ingredient][1], 1), round(ingredientsTotal[ingredient][0], 1),
+                       ingredientsTotal[ingredient][2]])
 
     table.sortby = "distance"
-
+    tableRows = table.rows
+    tableRows.sort(key=returnDistance)
+    tableRows = [i[1] for i in tableRows]
 
     print(table)
+
+    detailResults()

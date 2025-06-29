@@ -145,3 +145,4 @@ class Ingredient:
             return self.recipe.name == other
         else:
             return self.recipe == other
+
