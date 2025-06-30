@@ -1,4 +1,5 @@
 from enum import Enum
+from math import ceil
 
 
 class Category(Enum):
@@ -135,7 +136,7 @@ class Ingredient:
         else:
             self.required = (parentNeeds / recipeOutput) * (parentRequired / parentRecipeOutput)
 
-        self.machines_needed = self.required * itemsPerSecond
+        self.machines_needed = ceil(self.required * itemsPerSecond)
 
     def __str__(self):
         return f"{self.recipe.translated_name} x {self.required} ({self.machine} x {self.machines_needed})"

@@ -19,10 +19,6 @@ order = []
 tableRows = []
 
 
-def returnDistance(x):
-    return x[4]
-
-
 def ingestRecipes(recipesJson, resourcesJson):
     global subgroups
     global recipes
@@ -88,7 +84,6 @@ def ingestGroups(groupsJson):
 
     # Add all subgroups to a dictionary with the subgroup name as key and group name as value
     for group in keys:
-
         for i in groupsJson[group]['subgroups']:
             subgroups.update({i: group})
 
@@ -394,11 +389,6 @@ def calculateResult():
         ingredient.calculate(entities, buffs, total_ingredients)
 
 
-def defineOrder():
-    global total_ingredients
-    global order
-
-
 def collateResult():
     global ingredientsDict
     global ingredientsTotal
@@ -434,16 +424,54 @@ def collateResult():
 def printDetails(choice: int):
     global total_ingredients
     global tableRows
+    global ingredientsTotal
 
-    # TODO Choice is wrong
-    ingredientName = tableRows[choice]
+    ingredientName = tableRows[choice].lower().replace(" ", "-")
     ingredients = []
+    dependants = []
+    output = []
+    ingredientTotal = ingredientsTotal[ingredientName][0]
 
     for ingredient in total_ingredients:
-        if ingredient.recipe.name == ingredientName.lower().replace(" ", "-"):
+        if ingredient.parent.name == ingredientName:
             ingredients.append(ingredient)
+        if ingredient.recipe.name == ingredientName:
+            dependants.append(ingredient)
 
-    print(ingredients)
+    ingredientsSet = set([i.recipe.name for i in ingredients])
+    dependantsSet = set([i.parent.name for i in dependants])
+
+    ingredientsDict = {}.fromkeys(ingredientsSet)
+    dependantsDict = {}.fromkeys(dependantsSet)
+
+    for i in ingredientsSet:
+        ingredientsDict[i] = [0, 0]
+
+    for i in dependantsSet:
+        dependantsDict[i] = [0, 0]
+
+    for item in ingredients:
+        ingredientsDict[item.recipe.name][0] += item.required
+        ingredientsDict[item.recipe.name][1] += item.machines_needed
+
+    for item in dependants:
+        dependantsDict[item.parent.name][0] += item.required
+        dependantsDict[item.parent.name][1] += item.machines_needed
+
+    output.append("-----Ingredients-----")
+    for key in ingredientsSet:
+        array = ingredientsDict[key]
+        output.append(f"{array[0]} x {key.title().replace("-", " ")} - {array[1]} machines")
+
+    output.append("-----Dependants-----")
+
+    for key in dependantsSet:
+        array = dependantsDict[key]
+        percent = array[0] / ingredientTotal
+        output.append(f"{array[0]} x {key.title().replace("-", " ")} ({percent * 100}%) - {array[1]} machines")
+
+    for i in output:
+        print(i)
 
 
 def detailResults():
@@ -504,7 +532,7 @@ def printResults():
 
     table.sortby = "distance"
     tableRows = table.rows
-    tableRows.sort(key=returnDistance)
+    tableRows.sort(key=lambda row: row[0])
     tableRows = [i[1] for i in tableRows]
 
     print(table)
