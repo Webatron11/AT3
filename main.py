@@ -1,10 +1,4 @@
-from functions import ingest, calculateResult, chooseBuffs, displayCategories, chooseRate, collateResult, printResults
+from functions import ingest, mainMenu
 
 ingest()
-chooseRate()
-# displayCategories()
-# chooseBuffs()
-
-calculateResult()
-collateResult()
-printResults()
+mainMenu()

@@ -1,5 +1,6 @@
 from json import load
 from prettytable import PrettyTable
+from math import log
 
 from classes import *
 
@@ -15,8 +16,20 @@ total_ingredients = []
 rate = 0
 ingredientsTotal = {}
 ingredientsDict = {}
-order = []
 tableRows = []
+
+invalidEntry = "Invalid entry, please try again. Make sure you are entering an integer."
+invalidChoice = "Invalid choice. Try again with a valid choice "
+
+
+def roundUp(number: float) -> float:
+    rounded = round(number, 1)
+    if rounded > number:
+        return rounded
+    elif rounded == number:
+        return number
+    else:
+        return round(number + 0.05, 1)
 
 
 def ingestRecipes(recipesJson, resourcesJson):
@@ -58,14 +71,14 @@ def ingestItems(itemsJson):
                           translated_name=item['localized_name']['en']))
 
 
-def ingestEntities(craftingmachinesJson, miningdrillsJson):
+def ingestEntities(craftingMachinesJson, miningDrillsJson):
     global entities
 
-    for entity in craftingmachinesJson:
+    for entity in craftingMachinesJson:
         entities.append(
             Entity(name=entity['key'], translated_name=entity['localized_name']['en'], speed=entity['crafting_speed'],
                    categories=entity['crafting_categories']))
-    for entity in miningdrillsJson:
+    for entity in miningDrillsJson:
         entities.append(
             Entity(name=entity['key'], translated_name=entity['localized_name']['en'], speed=entity['mining_speed'],
                    categories=entity['resource_categories']))
@@ -119,8 +132,8 @@ def ingest():
     with open("vanilla-2.0.10.json") as file:
         json = load(file)
         recipesJson = json['recipes']
-        craftingmachinesJson = json['crafting_machines']
-        miningdrillsJson = json['mining_drills']
+        craftingMachinesJson = json['crafting_machines']
+        miningDrillsJson = json['mining_drills']
         itemsJson = json['items']
         resourcesJson = json['resources']
         groupsJson = json['groups']
@@ -132,7 +145,7 @@ def ingest():
 
     ingestRecipes(recipesJson, resourcesJson)
 
-    ingestEntities(craftingmachinesJson, miningdrillsJson)
+    ingestEntities(craftingMachinesJson, miningDrillsJson)
 
     ingestFuels(fuelJson)
 
@@ -140,12 +153,29 @@ def ingest():
 
 
 def printRecipes(group: list):
-    for item in group:
+    skip = 0
+    for i, item in enumerate(group):
+        if "1" in item.name:
+            name = item.name[:-2]
+        else:
+            name = item.name
+        if name[:-2] in group[i - 1].name and i <= skip:
+            continue
+        if i + 1 < len(group):
+            if name in group[i + 1].name and "-2" in group[i + 1].name:
+                print(name.title().replace('-', " ") + " (1-3)")
+                skip = i + 2
+                continue
+
         print(item.name.title().replace('-', " "))
 
 
 def chooseRate():
     global rate
+
+    print("\n-------------------- Rate of Production --------------------\n"
+          "Select the unit of the rate at which you want your desired\n"
+          "recipe to be produced. \n")
 
     while True:
         choice = input("1) Items Per Second \n"
@@ -155,16 +185,15 @@ def chooseRate():
         try:
             choice = int(choice)
         except ValueError:
-            print("Invalid input. Please try again.")
+            print(invalidEntry)
             continue
 
-        if 1 >= choice >= 3:
-            print("Invalid choice. Try again with a valid choice (1 or 2)")
-            continue
-        else:
+        if 1 <= choice <= 3:
+            rate = 60 ** (choice - 1)
             break
-
-    rate = 60 ** (choice - 1)
+        else:
+            print(invalidChoice + "(1-3)")
+            continue
 
 
 def chooseAmount():
@@ -172,12 +201,12 @@ def chooseAmount():
 
     while True:
         try:
-            choice = int(input("Input desired amount: "))
+            choice = int(input(f"Input desired amount per {"second" if log(rate, 60) == 0 else "minute" if log(rate, 60) == 1 else "hour"}: "))
         except ValueError:
             print("Invalid input, please try again. Make sure you are inputting a number.")
             continue
         else:
-            return choice / rate
+            return choice
 
 
 def chooseRecipe():
@@ -203,12 +232,15 @@ def chooseRecipe():
         else:
             break
 
+    print()
     recipes[index].printProducts()
     recipes[index].printIngredients()
+    print()
 
     while True:
         choice = input("1) Choose this recipe \n"
                        "2) Choose another recipe \n"
+                       "3) Return to categories \n"
                        "Input your choice:  ")
         try:
             choice = int(choice)
@@ -223,6 +255,9 @@ def chooseRecipe():
             case 2:
                 chooseRecipe()
                 break
+            case 3:
+                displayCategories()
+                break
             case _:
                 print("Invalid choice. Try again with a valid choice (1 or 2)")
                 continue
@@ -231,22 +266,35 @@ def chooseRecipe():
 def displayCategories():
     global groups
 
+    print("\n------------------------- Categories -------------------------\n"
+          "Pick a category to view the recipes within that category. Then\n"
+          "you can select a recipe and the desired quantity.\n")
+
     for i, group in enumerate(groups):
         print(f"{i + 1}) {group.title().replace('-', " ")}")
+    print(f"{len(groups) + 1}) Return home")
 
     while True:
+        choice = input("Which category would you like to look at? (Enter a number): ")
+
         try:
-            choice = int(input("Which category would you like to look at? (Enter a number): "))
+            choice = int(choice)
         except ValueError:
-            print("Invalid input. Please try again, with an integer.")
+            print(invalidEntry)
             continue
         else:
-            if (len(groups) + 1) >= choice >= 1:
+            if len(groups) >= choice >= 1:
+                print("\n")
                 printRecipes(groups[list(groups)[choice - 1]])
                 break
+            elif (len(groups) + 1) >= choice >= len(groups):
+                mainMenu()
+                break
             else:
-                print("Invalid selection. Please try again.")
+                print(invalidChoice + f" (Between 1 and {len(groups) + 1})")
                 continue
+
+    print("\n------------------------- Recipes -------------------------\n")
 
     while True:
         choice = input("1) Choose a recipe \n"
@@ -255,7 +303,7 @@ def displayCategories():
         try:
             choice = int(choice)
         except ValueError:
-            print("Invalid entry, please try again. Make sure you are entering a number.")
+            print(invalidEntry)
             continue
 
         match choice:
@@ -266,7 +314,7 @@ def displayCategories():
                 displayCategories()
                 break
             case _:
-                print("Invalid choice. Try again with a valid choice (1 or 2)")
+                print(invalidChoice + "(1 or 2)")
                 continue
 
 
@@ -306,6 +354,12 @@ def chooseResearch():
 
 
 def chooseBuffs():
+    print("\n---------------------------- Buffs ----------------------------\n"
+          "Here you choose which assembly machine tier you use, the mining drill \n"
+          "you use, and the furnace you use. For the furnace, you also choose the \n"
+          "fuel you'll use (unless its electric), and for the mining drill you\n"
+          "also enter how many 'Mining Productivity' researches you have done.\n")
+
     assembler = [i.name for i in entities if "crafting" in i.categories]
     miner = [i.name for i in entities if "basic-solid" in i.categories]
     furnace = [i.name for i in entities if "smelting" in i.categories]
@@ -316,9 +370,9 @@ def chooseBuffs():
 
     while not (chosenAssembler and chosenMiner and chosenFurnace):
         try:
-            choice = int(input("1) Assembling Machine \n"
-                               "2) Miner \n"
-                               "3) Furnace \n"
+            choice = int(input(f"{"* " if not chosenAssembler else ""}1) Assembling Machine \n"
+                               f"{"* " if not chosenMiner else ""}2) Miner \n"
+                               f"{"* " if not chosenFurnace else ""}3) Furnace \n"
                                "Input your choice:  "))
         except ValueError:
             print("Invalid entry, please try again. Make sure you are entering a number.")
@@ -363,30 +417,23 @@ def calculateIngredients(recipe: Recipe):
             total_ingredients.append(Ingredient(recipe=recipes[recipes.index('uranium-processing')], parent=recipe))
             calculateIngredients(recipes[recipes.index("uranium-processing")])
             continue
+        elif "solid-fuel" in ingredientItem.name:
+            total_ingredients.append(Ingredient(recipe=recipes[recipes.index("solid-fuel-from-light-oil")], parent=recipe))
+            calculateIngredients(recipes[recipes.index("solid-fuel-from-light-oil")])
+            continue
         else:
-            # # Checks if the last ingredient in total_ingredients has the current ingredient in its ingredient list
-            # if ingredientItem in total_ingredients[-1].recipe.ingredients:
-            #     # If so, makes the last item in total_ingredients the parent, in place of the parent recipe.
-            #     total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=total_ingredients[-1]))
-            # else:
             total_ingredients.append(Ingredient(recipe=recipes[recipes.index(ingredient.recipe)], parent=recipe))
 
         calculateIngredients(recipes[recipes.index(ingredient.recipe)])
 
 
 def calculateResult():
-    global buffs
-    global choices
-
-    buffs = ['assembling-machine-2', 'electric-mining-drill', 0.30000000000000004, 'electric-furnace']
-    choices = [[recipes[recipes.index("spidertron")], 1]]
-
     for choice in choices:
         total_ingredients.append(Ingredient(recipe=choice[0], required=choice[1], parent=choice[0]))
         calculateIngredients(choice[0])
 
     for ingredient in total_ingredients:
-        ingredient.calculate(entities, buffs, total_ingredients)
+        ingredient.calculate(entities, buffs, total_ingredients, rate)
 
 
 def collateResult():
@@ -401,7 +448,6 @@ def collateResult():
 
     for key in ingredientsSet:
         for ingredient in total_ingredients:
-            print(ingredient)
             if ingredient.recipe.name == key:
                 ingredientsDict[key].append([ingredient.parent, [ingredient.machines_needed, 0], [ingredient.required, 0]])
 
@@ -480,9 +526,8 @@ def detailResults():
     while True:
         length = len(tableRows)
 
-        choice = input(f"(1-{length}) Select an ingredient for more information \n"
-                       f"({length + 1}) Return Home \n"
-                       f"({length + 2}) Save Output \n"
+        choice = input(f"(0-{length}) Select an ingredient for more information \n"
+                       f"({length}) Return Home \n"
                        f"Input your choice: ")
 
         try:
@@ -491,17 +536,13 @@ def detailResults():
             print("Invalid entry, please try again. Make sure you are entering a number.")
             continue
 
-        if 0 <= choice <= length:
+        if 0 <= choice <= length - 1:
             printDetails(choice)
             continue
-        elif choice == 1:
-            # Return home
-            break
-        elif choice == 2:
-            # Save output
+        elif choice == length:
             break
         else:
-            print(f"Please try again with a number between 1 and {length + 2}")
+            print(f"Please try again with a number between 0 and {length}")
             continue
 
 
@@ -512,7 +553,7 @@ def printResults():
     global choices
     global tableRows
 
-    table = PrettyTable(['Number', 'Recipe', 'Machines Needed', 'Items Needed', 'distance'])
+    table = PrettyTable(['Number', 'Recipe', 'Items Needed', 'Machines Needed', 'distance'])
 
     for i, ingredient in enumerate(ingredientsTotal.keys()):
         parentIndexTotal = 0
@@ -527,14 +568,52 @@ def printResults():
         else:
             ingredientsTotal[ingredient].append(distance)
 
-        table.add_row([i, ingredient.title().replace("-", " "), round(ingredientsTotal[ingredient][1], 1), round(ingredientsTotal[ingredient][0], 1),
+        table.add_row([i, ingredient.title().replace("-", " "), roundUp(ingredientsTotal[ingredient][0]), roundUp(ingredientsTotal[ingredient][1]),
                        ingredientsTotal[ingredient][2]])
 
     table.sortby = "distance"
-    tableRows = table.rows
+    tableRows = table.rows.copy()
     tableRows.sort(key=lambda row: row[0])
     tableRows = [i[1] for i in tableRows]
 
     print(table)
 
     detailResults()
+
+
+def helpMe():
+    # TODO add help
+    pass
+
+
+def mainMenu():
+    print("--------------- Welcome to Factorio Calculator! ---------------\n"
+          "This program will calculate the optimum ratios of machines\n"
+          "for a desired output rate of an item. Select which machines,\n"
+          "fuel and research you desire and then the recipe you want to output.")
+    while True:
+        choice = input("1) Start \n"
+                       "2) Exit \n"
+                       "3) Help \n"
+                       "What would you like to do? (Enter a number between 1 and 3): ")
+        try:
+            choice = int(choice)
+        except ValueError:
+            print(invalidEntry)
+            continue
+
+        match choice:
+            case 1:
+                chooseRate()
+                displayCategories()
+                chooseBuffs()
+
+                calculateResult()
+                collateResult()
+                printResults()
+            case 2:
+                exit()
+            case 3:
+                helpMe()
+            case _:
+                print(invalidChoice + "(1-2)")

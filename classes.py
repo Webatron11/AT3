@@ -1,5 +1,4 @@
 from enum import Enum
-from math import ceil
 
 
 class Category(Enum):
@@ -40,12 +39,12 @@ class Recipe(Item):
         self.category = category
 
     def printIngredients(self):
-        print("---Ingredients---")
+        print("--- Ingredients ---")
         for ingredient in self.ingredients:
             print(f"{ingredient.required}x {ingredient.recipe.title().replace("-", " ")}")
 
     def printProducts(self):
-        print("---Products---")
+        print("---- Products ----")
         for product in self.products:
             print(f"{product['amount']}x {product['name'].title().replace("-", " ")}")
 
@@ -83,7 +82,9 @@ class Ingredient:
 
         self.machine = entities[entities.index(self.machine)]
 
-    def calculate(self, entities, buffs, total_ingredients):
+    def calculate(self, entities, buffs, total_ingredients, rate):
+        #TODO oil stuff doesn't work still - idk why
+
         self.chooseMachine(entities, buffs)
 
         # parentIngredient is the Ingredient object of the parent, located in the total_ingredients array
@@ -111,6 +112,9 @@ class Ingredient:
         elif parentIngredient == self:
             parentNeeds = self.required
             recipeOutput = self.recipe.products[0]['amount']
+        elif "solid-fuel" in self.recipe.name:
+            parentNeeds = parentIngredients[parentIngredients.index("solid-fuel")].required
+            recipeOutput = self.recipe.products[0]['amount']
         else:
             parentNeeds = parentIngredients[parentIngredients.index(self.recipe.name)].required
             recipeOutput = self.recipe.products[0]['amount']
@@ -119,9 +123,9 @@ class Ingredient:
         if self.recipe.category == 'basic-solid':
             buff = [i for i in buffs if type(i) == float][0]
             energy = self.recipe.energy / (1 + buff)
-            itemsPerSecond = (energy / self.machine.speed) / recipeOutput
+            itemsPerSecond = (energy / self.machine.speed) / recipeOutput / rate
         else:
-            itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput
+            itemsPerSecond = (self.recipe.energy / self.machine.speed) / recipeOutput / rate
 
         # parentRequired is how much of the parent recipe is required
         parentRequired = parentIngredient.required
@@ -136,7 +140,7 @@ class Ingredient:
         else:
             self.required = (parentNeeds / recipeOutput) * (parentRequired / parentRecipeOutput)
 
-        self.machines_needed = ceil(self.required * itemsPerSecond)
+        self.machines_needed = self.required * itemsPerSecond
 
     def __str__(self):
         return f"{self.recipe.translated_name} x {self.required} ({self.machine} x {self.machines_needed})"
@@ -146,4 +150,3 @@ class Ingredient:
             return self.recipe.name == other
         else:
             return self.recipe == other
-
