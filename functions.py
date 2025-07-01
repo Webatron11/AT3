@@ -1,9 +1,12 @@
 from json import load
 from prettytable import PrettyTable
 from math import log
+from os import startfile
 
 from classes import *
 
+
+# Init. all global variables that will be used
 recipes = []
 entities = []
 fuels = []
@@ -18,10 +21,11 @@ ingredientsTotal = {}
 ingredientsDict = {}
 tableRows = []
 
+# UI constant strings
 invalidEntry = "Invalid entry, please try again. Make sure you are entering an integer."
 invalidChoice = "Invalid choice. Try again with a valid choice "
 
-
+# Will only round up when rounding would cause the number to decrease. Otherwise, do nothing or round normally.
 def roundUp(number: float) -> float:
     rounded = round(number, 1)
     if rounded > number:
@@ -32,28 +36,37 @@ def roundUp(number: float) -> float:
         return round(number + 0.05, 1)
 
 
+# Ingests json data into the correct data structures
 def ingestRecipes(recipesJson, resourcesJson):
     global subgroups
     global recipes
 
+
     for recipe in recipesJson:
+        # Create an array of ingredients from the recipe JSON
         ingredients = [Ingredient(recipe=i['name'], required=i['amount'], parent=recipe['key']) for i in
                        recipe['ingredients']]
+        # Assign a group by checking which group the recipe's subgroup belongs to
         group = subgroups[recipe['subgroup']]
 
+        # Append recipe to the recipes array with data from the JSON
         recipes.append(
             Recipe(name=recipe['key'], order=recipe['order'], group=group, subgroup=recipe['subgroup'],
                    translated_name=recipe['localized_name']['en'], products=recipe['results'],
                    ingredients=ingredients, energy=recipe['energy_required'], category=recipe['category']))
 
+    # Handle ores and fluids
     for resource in resourcesJson:
+        # check for fluid or solid
         if "required_fluid" not in resource:
+            # For solids
             recipes.append(
                 Recipe(name=resource['key'], order='', group='', subgroup='',
                        translated_name=resource['localized_name']['en'],
                        energy=resource['mining_time'],
                        category=resource['category'], products=resource['results'], ingredients=[]))
         else:
+            # For fluids
             recipes.append(
                 Recipe(name=resource['key'], order='', group='', subgroup='',
                        translated_name=resource['localized_name']['en'],
@@ -597,8 +610,7 @@ def printResults():
 
 
 def helpMe():
-    # TODO add help
-    pass
+    startfile("help.pdf")
 
 
 def mainMenu():
