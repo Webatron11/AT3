@@ -76,14 +76,18 @@ class Ingredient:
         possibilities = [i for i in entities if self.recipe.category in i.categories]
 
         if len(possibilities) > 1:
-            self.machine = possibilities[possibilities.index([buff for buff in buffs if buff in possibilities][0])]
+            buff = [buff for buff in buffs if buff in possibilities]
+            if len(buff) > 0:
+                self.machine = possibilities[possibilities.index(buff[0])]
+            else:
+                self.machine = possibilities[0]
         else:
             self.machine = possibilities[0]
 
         self.machine = entities[entities.index(self.machine)]
 
     def calculate(self, entities, buffs, total_ingredients, rate):
-        #TODO oil stuff doesn't work still - idk why
+        # TODO oil stuff doesn't work still - idk why
 
         self.chooseMachine(entities, buffs)
 

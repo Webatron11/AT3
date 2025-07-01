@@ -295,6 +295,9 @@ def displayCategories():
                 continue
 
     print("\n------------------------- Recipes -------------------------\n")
+    print("Above is a list of recipes within the category you have selected.\n"
+          "You can either select a recipe by name (option 1) or return to\n"
+          "the previous menu to choose another category.\n")
 
     while True:
         choice = input("1) Choose a recipe \n"
@@ -354,15 +357,21 @@ def chooseResearch():
 
 
 def chooseBuffs():
+    global buffs
+
     print("\n---------------------------- Buffs ----------------------------\n"
           "Here you choose which assembly machine tier you use, the mining drill \n"
           "you use, and the furnace you use. For the furnace, you also choose the \n"
           "fuel you'll use (unless its electric), and for the mining drill you\n"
-          "also enter how many 'Mining Productivity' researches you have done.\n")
+          "also enter how many 'Mining Productivity' researches you have done.\n"
+          "The asterisk at the beginning of the option denotes an unselected\n"
+          "buff.\n")
 
     assembler = [i.name for i in entities if "crafting" in i.categories]
     miner = [i.name for i in entities if "basic-solid" in i.categories]
     furnace = [i.name for i in entities if "smelting" in i.categories]
+
+    buffs = []
 
     chosenAssembler = False
     chosenMiner = False
@@ -491,30 +500,32 @@ def printDetails(choice: int):
     dependantsDict = {}.fromkeys(dependantsSet)
 
     for i in ingredientsSet:
-        ingredientsDict[i] = [0, 0]
+        ingredientsDict[i] = [0, 0, ""]
 
     for i in dependantsSet:
-        dependantsDict[i] = [0, 0]
+        dependantsDict[i] = [0, 0, ""]
 
     for item in ingredients:
         ingredientsDict[item.recipe.name][0] += item.required
         ingredientsDict[item.recipe.name][1] += item.machines_needed
+        ingredientsDict[item.recipe.name][2] = (item.machine.name.replace("-", " ").title())
 
     for item in dependants:
         dependantsDict[item.parent.name][0] += item.required
         dependantsDict[item.parent.name][1] += item.machines_needed
+        dependantsDict[item.parent.name][2] = item.machine.name.replace("-", " ").title()
 
     output.append("-----Ingredients-----")
     for key in ingredientsSet:
         array = ingredientsDict[key]
-        output.append(f"{array[0]} x {key.title().replace("-", " ")} - {array[1]} machines")
+        output.append(f"{array[0]} x {key.title().replace("-", " ")} - {array[1]} x {array[2]}")
 
     output.append("-----Dependants-----")
 
     for key in dependantsSet:
         array = dependantsDict[key]
         percent = array[0] / ingredientTotal
-        output.append(f"{array[0]} x {key.title().replace("-", " ")} ({percent * 100}%) - {array[1]} machines")
+        output.append(f"{array[0]} x {key.title().replace("-", " ")} ({percent * 100}%) - {array[1]} x {array[2]}")
 
     for i in output:
         print(i)
@@ -538,6 +549,7 @@ def detailResults():
 
         if 0 <= choice <= length - 1:
             printDetails(choice)
+            print()
             continue
         elif choice == length:
             break
@@ -577,6 +589,9 @@ def printResults():
     tableRows = [i[1] for i in tableRows]
 
     print(table)
+
+    print("Above is a table containing the calculated output. You are able to\n"
+          "choose a specific ingredient to get more details about it in context.")
 
     detailResults()
 
